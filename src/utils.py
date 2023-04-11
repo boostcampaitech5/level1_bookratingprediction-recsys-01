@@ -6,7 +6,13 @@ import torch
 import torch.nn as nn
 import logging
 import json
+from datetime import datetime, timedelta
 from .models import *
+
+
+def get_timestamp(date_format: str = '%Y-%m-%d-%H:%M:%S') -> str:
+    timestamp = datetime.now()
+    return timestamp.strftime(date_format)
 
 def rmse(real: list, predict: list) -> float:
     '''
