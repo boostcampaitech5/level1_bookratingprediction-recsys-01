@@ -2,7 +2,7 @@
 name: Feature issue
 about: Feature related issue
 title: "[feat:] Feed my cat"
-label: enhancement
+labels: enhancement
 ---
 
 _*본 템플릿을 준수하지 않아도 됩니다._
