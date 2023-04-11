@@ -3,4 +3,4 @@ scikit-learn
 nltk
 transformers
 matplotlib==3.7.1
-seaborn=
+seaborn==0.12.2
