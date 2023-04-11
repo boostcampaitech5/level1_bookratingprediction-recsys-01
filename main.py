@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     ############### WANDB OPTION
     arg('--project', type=str, default='book-rating-prediction')
-    arg('--entity', type=str, default='alstjrdlzz')
+    arg('--entity', type=str, default='recsys01')
     arg('--name', type=str, default=f'work-{get_timestamp()}')
     
 
