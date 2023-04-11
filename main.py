@@ -1,7 +1,8 @@
 import time
 import argparse
+import wandb
 import pandas as pd
-from src.utils import Logger, Setting, models_load
+from src.utils import Logger, Setting, models_load, get_timestamp
 from src.data import context_data_load, context_data_split, context_data_loader
 from src.data import dl_data_load, dl_data_split, dl_data_loader
 from src.data import image_data_load, image_data_split, image_data_loader
@@ -58,6 +59,8 @@ def main(args):
     logger = Logger(args, log_path)
     logger.save_args()
 
+    wandb.login(key='d5105ed3392ca1fdbbdab3ee87c0724c7a1ec534')
+
 
     ######################## Model
     print(f'--------------- INIT {args.model} ---------------')
@@ -113,6 +116,12 @@ if __name__ == "__main__":
     arg('--optimizer', type=str, default='ADAM', choices=['SGD', 'ADAM'], help='최적화 함수를 변경할 수 있습니다.')
     arg('--weight_decay', type=float, default=1e-6, help='Adam optimizer에서 정규화에 사용하는 값을 조정할 수 있습니다.')
 
+
+    ############### WANDB OPTION
+    arg('--project', type=str, default='book-rating-prediction')
+    arg('--entity', type=str, default='alstjrdlzz')
+    arg('--name', type=str, default=f'work-{get_timestamp()}')
+    
 
     ############### GPU
     arg('--device', type=str, default='cuda', choices=['cuda', 'cpu'], help='학습에 사용할 Device를 조정할 수 있습니다.')
