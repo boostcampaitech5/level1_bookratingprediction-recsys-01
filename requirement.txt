@@ -5,3 +5,4 @@ transformers
 matplotlib==3.7.1
 seaborn==0.12.2
 wandb==0.14.2
+torch==2.0.0
