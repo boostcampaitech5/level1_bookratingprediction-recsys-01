@@ -76,8 +76,8 @@ class Setting:
         torch.cuda.manual_seed(seed)
         torch.backends.cudnn.deterministic = True
 
-    def __init__(self):
-        save_time = get_timestamp()
+    def __init__(self, args):
+        save_time = args.name
         self.save_time = save_time
 
     def get_log_path(self, args):

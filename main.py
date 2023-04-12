@@ -51,7 +51,7 @@ def main(args):
         pass
 
     ####################### Setting for Log
-    setting = Setting()
+    setting = Setting(args)
 
     log_path = setting.get_log_path(args)
     setting.make_dir(log_path)
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     ############### WANDB OPTION
     arg('--project', type=str, default='book-rating-prediction')
     arg('--entity', type=str, default='recsys01')
-    arg('--name', type=str, default=f'work-{setting.save_time}')
+    arg('--name', type=str, default=f'work-{get_timestamp()}')
     
 
     ############### GPU
