@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from .models import *
 
 
-def get_timestamp(date_format: str = '%Y-%m-%d-%H:%M:%S') -> str:
+def get_timestamp(date_format: str = '%y%m%d_%H%M%S') -> str:
     timestamp = datetime.now()
     return timestamp.strftime(date_format)
 
@@ -76,11 +76,8 @@ class Setting:
         torch.cuda.manual_seed(seed)
         torch.backends.cudnn.deterministic = True
 
-    def __init__(self):
-        now = time.localtime()
-        now_date = time.strftime('%Y%m%d', now)
-        now_hour = time.strftime('%X', now)
-        save_time = now_date + '_' + now_hour.replace(':', '')
+    def __init__(self, args):
+        save_time = args.name
         self.save_time = save_time
 
     def get_log_path(self, args):
@@ -110,7 +107,8 @@ class Setting:
         filename : submit file을 저장할 경로를 반환합니다.
         이 때, 파일명은 submit/날짜_시간_모델명.csv 입니다.
         '''
-        filename = f'./submit/{self.save_time}_{args.model}.csv'
+        path = self.make_dir('./submit/')
+        filename = f'{path}{self.save_time}_{args.model}.csv'
         return filename
 
     def make_dir(self,path):
