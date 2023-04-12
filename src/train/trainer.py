@@ -1,6 +1,7 @@
 import os
 import tqdm
 import wandb
+import pandas as pd
 import torch
 import torch.nn as nn
 from torch.nn import MSELoss
@@ -103,3 +104,30 @@ def test(args, model, dataloader, setting):
         y_hat = model(x)
         predicts.extend(y_hat.tolist())
     return predicts
+
+
+def infer(args, model, dataloader, setting):
+    predicts = list()
+    if args.use_best_model == True:
+        model.load_state_dict(torch.load(f'./saved_models/{setting.save_time}_{args.model}_model.pt'))
+    else:
+        pass
+    model.eval()
+
+    for idx, data in enumerate(dataloader['valid_dataloader']):
+        if args.model == 'CNN_FM':
+            x, _ = [data['user_isbn_vector'].to(args.device), data['img_vector'].to(args.device)], data['label'].to(args.device)
+        elif args.model == 'DeepCoNN':
+            x, _ = [data['user_isbn_vector'].to(args.device), data['user_summary_merge_vector'].to(args.device), data['item_summary_vector'].to(args.device)], data['label'].to(args.device)
+        else:
+            x = data[0].to(args.device)
+        y_hat = model(x)
+        predicts.extend(y_hat.tolist())
+    
+
+    user_id = dataloader['X_valid']['user_id'].map(dataloader['idx2user']).reset_index(drop=True)
+    isbn = dataloader['X_valid']['isbn'].map(dataloader['idx2isbn']).reset_index(drop=True)
+    rating = dataloader['y_valid'].reset_index(drop=True)
+    pred = pd.Series(predicts, name='pred')
+
+    return pd.concat([user_id, isbn, rating, pred], axis=1)
