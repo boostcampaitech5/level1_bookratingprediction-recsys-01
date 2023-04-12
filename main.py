@@ -9,7 +9,7 @@ from src.data import context_data_load, context_data_split, context_data_loader
 from src.data import dl_data_load, dl_data_split, dl_data_loader
 from src.data import image_data_load, image_data_split, image_data_loader
 from src.data import text_data_load, text_data_split, text_data_loader
-from src.train import train, test
+from src.train import train, test, infer
 
 
 def main(args):
@@ -82,7 +82,7 @@ def main(args):
     ######################## INFERENCE
     print(f'--------------- {args.model} PREDICT ---------------')
     predicts = test(args, model, data, setting)
-
+    
 
     ######################## SAVE PREDICT
     print(f'--------------- SAVE {args.model} PREDICT ---------------')
@@ -94,6 +94,11 @@ def main(args):
 
     filename = setting.get_submit_filename(args)
     submission.to_csv(filename, index=False)
+
+    ######################## INFERENCE & SAVE VALID
+    print(f'--------------- INFERENCE & SAVE {args.model} VALID ---------------')
+    result = infer(args, model, data, setting)
+    result.to_csv(filename.replace('.csv', '_valid.csv'), index=False)
 
 
 if __name__ == "__main__":
