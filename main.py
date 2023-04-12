@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
 
     ############### BASIC OPTION
-    arg('--data_path', type=str, default='data/', help='Data path를 설정할 수 있습니다.')
+    arg('--data_path', type=str, default='../data/', help='Data path를 설정할 수 있습니다.')
     arg('--saved_model_path', type=str, default='./saved_models', help='Saved Model path를 설정할 수 있습니다.')
     arg('--model', type=str, choices=['FM', 'FFM', 'NCF', 'WDN', 'DCN', 'CNN_FM', 'DeepCoNN'],
                                 help='학습 및 예측할 모델을 선택할 수 있습니다.')
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     ############### WANDB OPTION
     arg('--project', type=str, default='book-rating-prediction')
     arg('--entity', type=str, default='recsys01')
-    arg('--name', type=str, default=f'work-{get_timestamp()}')
+    arg('--name', type=str, default=f'work-{setting.save_time}')
     
 
     ############### GPU
