@@ -56,7 +56,7 @@ def train(args, model, dataloader, logger, setting):
         valid_loss = valid(args, model, dataloader, loss_fn)
         print(f'Epoch: {epoch+1}, Train_loss: {total_loss/batch:.3f}, valid_loss: {valid_loss:.3f}')
         logger.log(epoch=epoch+1, train_loss=total_loss/batch, valid_loss=valid_loss)
-        wandb.log({'epoch': epoch, 'val_loss': valid_loss})
+        wandb.log({'epoch': epoch, 'tra_loss': total_loss/batch, 'val_loss': valid_loss})
         if minimum_loss > valid_loss:
             minimum_loss = valid_loss
             os.makedirs(args.saved_model_path, exist_ok=True)
