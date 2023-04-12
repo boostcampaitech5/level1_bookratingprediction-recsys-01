@@ -77,7 +77,7 @@ class Setting:
         torch.backends.cudnn.deterministic = True
 
     def __init__(self):
-        save_time = get_timestamp(date_format: str = '%y%m%d_%H%M%S')
+        save_time = get_timestamp()
         self.save_time = save_time
 
     def get_log_path(self, args):
