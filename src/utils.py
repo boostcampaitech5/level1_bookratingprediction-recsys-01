@@ -108,7 +108,7 @@ class Setting:
         이 때, 파일명은 submit/날짜_시간_모델명.csv 입니다.
         '''
         path = self.make_dir('./submit/')
-        filename = f{path}{self.save_time}_{args.model}.csv'
+        filename = f'{path}{self.save_time}_{args.model}.csv'
         return filename
 
     def make_dir(self,path):
