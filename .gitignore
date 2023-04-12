@@ -16,3 +16,5 @@ ipython_config.py
 # For somebody who try to upload key file.. :)
 key
 
+# environment
+.env
