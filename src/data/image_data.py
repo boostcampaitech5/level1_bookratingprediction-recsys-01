@@ -75,7 +75,7 @@ def process_img_data(df, books, user2idx, isbn2idx, train=False):
         df_['isbn'] = df_['isbn'].map(isbn2idx)
 
     df_ = pd.merge(df_, books_[['isbn', 'img_path']], on='isbn', how='left')
-    df_['img_path'] = df_['img_path'].apply(lambda x: 'data/'+x)
+    df_['img_path'] = df_['img_path'].apply(lambda x: '../data/'+x)
     img_vector_df = df_[['img_path']].drop_duplicates().reset_index(drop=True).copy()
     data_box = []
     for idx, path in tqdm(enumerate(sorted(img_vector_df['img_path']))):

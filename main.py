@@ -2,6 +2,8 @@ import time
 import argparse
 import wandb
 import pandas as pd
+import os
+import dotenv
 from src.utils import Logger, Setting, models_load, get_timestamp
 from src.data import context_data_load, context_data_split, context_data_loader
 from src.data import dl_data_load, dl_data_split, dl_data_loader
@@ -12,6 +14,10 @@ from src.train import train, test
 
 def main(args):
     Setting.seed_everything(args.seed)
+    
+    
+    ######################## Load .env
+    dotenv.load_dotenv()
 
 
     ######################## DATA LOAD
@@ -58,8 +64,9 @@ def main(args):
 
     logger = Logger(args, log_path)
     logger.save_args()
-
-    wandb.login(key='d5105ed3392ca1fdbbdab3ee87c0724c7a1ec534')
+    
+    WANDB_API_KEY = os.environ.get('WANDB_API_KEY')
+    wandb.login(key=WANDB_API_KEY)
 
 
     ######################## Model
