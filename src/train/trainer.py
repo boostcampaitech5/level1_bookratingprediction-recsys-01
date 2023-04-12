@@ -125,9 +125,9 @@ def infer(args, model, dataloader, setting):
         predicts.extend(y_hat.tolist())
     
 
-    user_id = dataloader['X_valid']['user_id'].map(dataloader['idx2user']).reset_index()
-    isbn = dataloader['X_valid']['isbn'].map(dataloader['idx2isbn'])
-    rating = dataloader['y_valid']
+    user_id = dataloader['X_valid']['user_id'].map(dataloader['idx2user']).reset_index(drop=True)
+    isbn = dataloader['X_valid']['isbn'].map(dataloader['idx2isbn']).reset_index(drop=True)
+    rating = dataloader['y_valid'].reset_index(drop=True)
     pred = pd.Series(predicts, name='pred')
 
     return pd.concat([user_id, isbn, rating, pred], axis=1)
