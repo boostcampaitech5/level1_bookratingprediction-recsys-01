@@ -111,6 +111,14 @@ def process_text_data(df, books, user2idx, isbn2idx, device, train=False, user_s
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     model = BertModel.from_pretrained('bert-base-uncased').to(device)
 
+    # text vector를 저장할 디렉토리를 생성합니다
+    tv_dir = '../data/text_vector'
+    try:
+        if not os.path.exists(tv_dir):
+            os.makedirs(tv_dir)
+    except OSError:
+        print("Error: Failed to create", tv_dir, "directory.")
+
     if user_summary_merge_vector and item_summary_vector:
         print('Create User Summary Merge Vector')
         user_summary_merge_vector_list = []
@@ -123,12 +131,11 @@ def process_text_data(df, books, user2idx, isbn2idx, device, train=False, user_s
                                 user_review_text_df['user_id'].values.reshape(1, -1),
                                 user_review_text_df['user_summary_merge_vector'].values.reshape(1, -1)
                                 ])
-        if not os.path.exists('./data/text_vector'):
-            os.makedirs('./data/text_vector')
+
         if train == True:
-            np.save('./data/text_vector/train_user_summary_merge_vector.npy', vector)
+            np.save(os.path.join(tv_dir, "train_user_summary_merge_vector.npy"), vector)
         else:
-            np.save('./data/text_vector/test_user_summary_merge_vector.npy', vector)
+            np.save(os.path.join(tv_dir, "test_user_summary_merge_vector.npy"), vector)
 
         print('Create Item Summary Vector')
         item_summary_vector_list = []
@@ -143,27 +150,29 @@ def process_text_data(df, books, user2idx, isbn2idx, device, train=False, user_s
                                 books_text_df['isbn'].values.reshape(1, -1),
                                 books_text_df['item_summary_vector'].values.reshape(1, -1)
                                 ])
-        if not os.path.exists('./data/text_vector'):
-            os.makedirs('./data/text_vector')
+
         if train == True:
-            np.save('./data/text_vector/train_item_summary_vector.npy', vector)
+            np.save(os.path.join(tv_dir, "train_item_summary_vector.npy"), vector)
         else:
-            np.save('./data/text_vector/test_item_summary_vector.npy', vector)
+            np.save(os.path.join(tv_dir, "test_item_summary_vector.npy"), vector)
     else:
         print('Check Vectorizer')
         print('Vector Load')
+
         if train == True:
-            user = np.load('data/text_vector/train_user_summary_merge_vector.npy', allow_pickle=True)
+            user = np.load(os.path.join(tv_dir, "train_user_summary_merge_vector.npy"), allow_pickle=True)
         else:
-            user = np.load('data/text_vector/test_user_summary_merge_vector.npy', allow_pickle=True)
+            user = np.load(os.path.join(tv_dir, "test_user_summary_merge_vector.npy"), allow_pickle=True)
+
         user_review_text_df = pd.DataFrame([user[0], user[1]]).T
         user_review_text_df.columns = ['user_id', 'user_summary_merge_vector']
         user_review_text_df['user_id'] = user_review_text_df['user_id'].astype('int')
 
         if train == True:
-            item = np.load('data/text_vector/train_item_summary_vector.npy', allow_pickle=True)
+            item = np.load(os.path.join(tv_dir, "train_item_summary_vector.npy"), allow_pickle=True)
         else:
-            item = np.load('data/text_vector/test_item_summary_vector.npy', allow_pickle=True)
+            item = np.load(os.path.join(tv_dir, "test_item_summary_vector.npy"), allow_pickle=True)
+
         books_text_df = pd.DataFrame([item[0], item[1]]).T
         books_text_df.columns = ['isbn', 'item_summary_vector']
         books_text_df['isbn'] = books_text_df['isbn'].astype('int')
