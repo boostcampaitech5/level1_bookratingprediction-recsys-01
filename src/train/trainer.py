@@ -4,7 +4,7 @@ import wandb
 import pandas as pd
 import torch
 import torch.nn as nn
-from torch.nn import MSELoss
+from torch.nn import MSELoss, HuberLoss
 from torch.optim import SGD, Adam
 
 class RMSELoss(nn.Module):
@@ -45,6 +45,8 @@ def train(args, model, dataloader, logger, setting):
         loss_fn = MSELoss()
     elif loss_fn_ == 'RMSE':
         loss_fn = RMSELoss()
+    elif args.loss_fn == 'Huber':
+        loss_fn = HuberLoss()
     else:
         pass
     if optimizer_ == 'SGD':
@@ -55,6 +57,11 @@ def train(args, model, dataloader, logger, setting):
         pass
         
     for epoch in tqdm.tqdm(range(epochs)):
+        #for early stopping
+        best_loss = 10 ** 2 # loss 초기값
+        patient_limit = args.patient_limit # 3번의 epoch까지 허용
+        patient_check = 0 # 연속적으로 개선되지 않은 epoch의 수
+        
         model.train()
         total_loss = 0
         batch = 0
@@ -77,10 +84,19 @@ def train(args, model, dataloader, logger, setting):
         print(f'Epoch: {epoch+1}, Train_loss: {total_loss/batch:.3f}, valid_loss: {valid_loss:.3f}')
         logger.log(epoch=epoch+1, train_loss=total_loss/batch, valid_loss=valid_loss)
         wandb.log({'epoch': epoch, 'tra_loss': total_loss/batch, 'val_loss': valid_loss})
+        
         if minimum_loss > valid_loss:
             minimum_loss = valid_loss
             os.makedirs(args.saved_model_path, exist_ok=True)
             torch.save(model.state_dict(), f'{args.saved_model_path}/{setting.save_time}_{args.model}_model.pt')
+
+        if valid_loss > best_loss:
+            patient_check += 1
+            if patient_check >= patient_limit:
+                break
+        else:
+            best_loss = valid_loss
+            patient_check = 0     
     logger.close()
     wandb.finish()
     return model
