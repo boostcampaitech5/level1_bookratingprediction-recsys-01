@@ -20,6 +20,15 @@ def main(args):
     ######################## Load .env
     dotenv.load_dotenv()
 
+    ######################## WANDB
+    run = wandb.init(project=args.project, entity=args.entity, name=args.name)
+    
+    if args.sweep:
+        w_config = wandb.config
+        args_dict = vars(args)
+        
+        args = argparse.Namespace(**dict(args_dict, **w_config))
+    run.tags = [args.model]
 
     ######################## DATA LOAD
     print(f'--------------- {args.model} Load Data ---------------')
@@ -84,6 +93,10 @@ def main(args):
     ######################## INFERENCE
     print(f'--------------- {args.model} PREDICT ---------------')
     predicts = test(args, model, data, setting)
+    
+    
+    ######################## WANDB FINISH
+    wandb.finish()
     
 
     ######################## SAVE PREDICT
