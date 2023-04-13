@@ -17,7 +17,7 @@ class RMSELoss(nn.Module):
         return loss
 
 def train(args, model, dataloader, logger, setting):
-    wandb.init(project=args.project, entity=args.entity, name=args.name)
+    wandb.init(project=args.project, entity=args.entity, name=args.name, tags=[args.model])
     
     ########### Parameters
     loss_fn_ = args.loss_fn
