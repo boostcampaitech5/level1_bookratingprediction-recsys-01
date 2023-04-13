@@ -20,7 +20,7 @@ def age_map(x: int) -> int:
     else:
         return 6
 
-def process_context_data(users, books, ratings1, ratings2):
+def process_context_data(users, books, ratings1, ratings2, book_cat):
     """
     Parameters
     ----------
@@ -32,6 +32,8 @@ def process_context_data(users, books, ratings1, ratings2):
         train 데이터의 rating
     ratings2 : pd.DataFrame
         test 데이터의 rating
+    book_cat : str
+        books 데이터에서 선택할 카테고리 (원본, 상위)
     ----------
     """
 
@@ -43,9 +45,17 @@ def process_context_data(users, books, ratings1, ratings2):
     ratings = pd.concat([ratings1, ratings2]).reset_index(drop=True)
 
     # 인덱싱 처리된 데이터 조인
-    context_df = ratings.merge(users, on='user_id', how='left').merge(books[['isbn', 'category', 'publisher', 'language', 'book_author']], on='isbn', how='left')
-    train_df = ratings1.merge(users, on='user_id', how='left').merge(books[['isbn', 'category', 'publisher', 'language', 'book_author']], on='isbn', how='left')
-    test_df = ratings2.merge(users, on='user_id', how='left').merge(books[['isbn', 'category', 'publisher', 'language', 'book_author']], on='isbn', how='left')
+    if book_cat == 'basic': # 원본 카테고리
+        print("+++++++++++++++++++ CAT is BASIC +++++++++++++++++")
+        context_df = ratings.merge(users, on='user_id', how='left').merge(books[['isbn', 'category', 'publisher', 'language', 'book_author']], on='isbn', how='left')
+        train_df = ratings1.merge(users, on='user_id', how='left').merge(books[['isbn', 'category', 'publisher', 'language', 'book_author']], on='isbn', how='left')
+        test_df = ratings2.merge(users, on='user_id', how='left').merge(books[['isbn', 'category', 'publisher', 'language', 'book_author']], on='isbn', how='left')
+    elif book_cat == 'high': # 상위 카테고리
+        print("+++++++++++++++++++ CAT is HIGH +++++++++++++++++")
+        context_df = ratings.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author']], on='isbn', how='left')
+        train_df = ratings1.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author']], on='isbn', how='left')
+        test_df = ratings2.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author']], on='isbn', how='left')
+
 
     # 인덱싱 처리
     loc_city2idx = {v:k for k,v in enumerate(context_df['location_city'].unique())}
@@ -65,16 +75,23 @@ def process_context_data(users, books, ratings1, ratings2):
     test_df['age'] = test_df['age'].apply(age_map)
 
     # book 파트 인덱싱
-    category2idx = {v:k for k,v in enumerate(context_df['category'].unique())}
+    if book_cat == 'basic': # 원본 카테고리
+        category2idx = {v:k for k,v in enumerate(context_df['category'].unique())}
+        train_df['category'] = train_df['category'].map(category2idx)
+        test_df['category'] = test_df['category'].map(category2idx)
+    elif book_cat == 'high': # 상위 카테고리
+        category2idx = {v:k for k,v in enumerate(context_df['category_high'].unique())}
+        train_df['category_high'] = train_df['category_high'].map(category2idx)
+        test_df['category_high'] = test_df['category_high'].map(category2idx)
+
     publisher2idx = {v:k for k,v in enumerate(context_df['publisher'].unique())}
     language2idx = {v:k for k,v in enumerate(context_df['language'].unique())}
     author2idx = {v:k for k,v in enumerate(context_df['book_author'].unique())}
 
-    train_df['category'] = train_df['category'].map(category2idx)
     train_df['publisher'] = train_df['publisher'].map(publisher2idx)
     train_df['language'] = train_df['language'].map(language2idx)
     train_df['book_author'] = train_df['book_author'].map(author2idx)
-    test_df['category'] = test_df['category'].map(category2idx)
+    
     test_df['publisher'] = test_df['publisher'].map(publisher2idx)
     test_df['language'] = test_df['language'].map(language2idx)
     test_df['book_author'] = test_df['book_author'].map(author2idx)
@@ -99,6 +116,8 @@ def context_data_load(args):
     Args:
         data_path : str
             데이터 경로
+        book_cat : str
+            books 데이터에서 선택할 카테고리 (원본, 상위)
     ----------
     """
 
@@ -128,7 +147,7 @@ def context_data_load(args):
     test['isbn'] = test['isbn'].map(isbn2idx)
     books['isbn'] = books['isbn'].map(isbn2idx)
 
-    idx, context_train, context_test = process_context_data(users, books, train, test)
+    idx, context_train, context_test = process_context_data(users, books, train, test, args.book_cat)
     field_dims = np.array([len(user2idx), len(isbn2idx),
                             6, len(idx['loc_city2idx']), len(idx['loc_state2idx']), len(idx['loc_country2idx']),
                             len(idx['category2idx']), len(idx['publisher2idx']), len(idx['language2idx']), len(idx['author2idx'])], dtype=np.uint32)
