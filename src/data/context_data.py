@@ -5,9 +5,25 @@ import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader, Dataset
 
-def age_map(x: int) -> int:
-    x = int(x)
-    if x < 20:
+### fill NaN of Age using location mean
+def fill_age_na_with_loc_mean(user_):
+    u_age, u_city, u_state, u_country = user_.iloc[1:5]
+    
+    if np.isnan(u_age):
+        if u_state != "n/a":
+            u_age = state_age_info[u_state] 
+        elif u_country != "n/a":
+            u_age = country_age_info[u_country] 
+
+    user_["age"] = u_age    
+    return user_ 
+
+### modi from origin for zero mapping
+def age_map(x) -> int:
+    # x = int(x)
+    if np.isnan(x):
+        return 0
+    elif x < 20:
         return 1
     elif x >= 20 and x < 30:
         return 2
@@ -19,8 +35,7 @@ def age_map(x: int) -> int:
         return 5
     else:
         return 6
-
-def process_context_data(users, books, ratings1, ratings2, book_cat):
+def process_context_data(users, books, ratings1, ratings2, process_cat, process_age):
     """
     Parameters
     ----------
@@ -32,8 +47,10 @@ def process_context_data(users, books, ratings1, ratings2, book_cat):
         train 데이터의 rating
     ratings2 : pd.DataFrame
         test 데이터의 rating
-    book_cat : str
+    process_cat : str
         books 데이터에서 선택할 카테고리 (원본, 상위)
+    process_age : str
+        Age 데이터의 결측치를 처리할 방법 (global_mean, zero_cat, loc_mean, rand_norm)
     ----------
     """
 
@@ -45,13 +62,13 @@ def process_context_data(users, books, ratings1, ratings2, book_cat):
     ratings = pd.concat([ratings1, ratings2]).reset_index(drop=True)
 
     # 인덱싱 처리된 데이터 조인
-    if book_cat == 'basic': # 원본 카테고리
-        print("+++++++++++++++++++ CAT is BASIC +++++++++++++++++")
+    if process_cat == 'basic': # 원본 카테고리
+        print("+++++++++++++++++++ processing cat : BASIC +++++++++++++++++")
         context_df = ratings.merge(users, on='user_id', how='left').merge(books[['isbn', 'category', 'publisher', 'language', 'book_author']], on='isbn', how='left')
         train_df = ratings1.merge(users, on='user_id', how='left').merge(books[['isbn', 'category', 'publisher', 'language', 'book_author']], on='isbn', how='left')
         test_df = ratings2.merge(users, on='user_id', how='left').merge(books[['isbn', 'category', 'publisher', 'language', 'book_author']], on='isbn', how='left')
-    elif book_cat == 'high': # 상위 카테고리
-        print("+++++++++++++++++++ CAT is HIGH +++++++++++++++++")
+    elif process_cat == 'high': # 상위 카테고리
+        print("+++++++++++++++++++ processing cat : HIGH +++++++++++++++++")
         context_df = ratings.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author']], on='isbn', how='left')
         train_df = ratings1.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author']], on='isbn', how='left')
         test_df = ratings2.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author']], on='isbn', how='left')
@@ -68,18 +85,55 @@ def process_context_data(users, books, ratings1, ratings2, book_cat):
     test_df['location_city'] = test_df['location_city'].map(loc_city2idx)
     test_df['location_state'] = test_df['location_state'].map(loc_state2idx)
     test_df['location_country'] = test_df['location_country'].map(loc_country2idx)
-
-    train_df['age'] = train_df['age'].fillna(int(train_df['age'].mean()))
+    
+    # Age 결측치 처리
+    if process_age == 'global_mean': # fill NaN with global mean
+        print("+++++++++++++++++++ processing Age : global_mean +++++++++++++++++")
+        train_df['age'] = train_df['age'].fillna(int(train_df['age'].mean()))
+        test_df['age']  = test_df['age'].fillna(int(test_df['age'].mean()))
+    elif process_age == 'zero_cat': # fill NaN with zero_cat
+        print("+++++++++++++++++++ processing Age : zero_cat +++++++++++++++++")
+    elif process_age == 'loc_mean': # fill NaN with location_mean
+        print("+++++++++++++++++++ processing Age : loc_mean +++++++++++++++++")
+        state_age_info = dict()        
+        for state in users['location_state'].unique():
+            state_age_info[state] = users[users["location_state"] == state].age.mean()
+            
+        country_age_info = dict()
+        for country in users['location_country'].unique():
+            country_age_info[country] = users[users["location_country"] == country].age.mean()
+        
+        train_df = train_df.apply(fill_age_na_with_loc_mean, axis=1)
+        train_df['age'] = train_df['age'].fillna(int(train_df['age'].mean()))
+        test_df = test_df.apply(fill_age_na_with_loc_mean, axis=1)
+        test_df['age'] = test_df['age'].fillna(int(test_df['age'].mean()))
+    elif process_age == 'rand_norm': # fill NaN with random numb from normal Dist
+        print("+++++++++++++++++++ processing Age : rand_norm +++++++++++++++++")
+        age_mean =  np.mean(train_df['age']) 
+        age_std =  np.std(train_df['age']) 
+        for idx in np.where(np.isnan(train_df['age']))[0]:
+            train_df.loc[idx,'age'] = int(np.random.normal(age_mean, age_std,1))
+            if train_df.loc[idx,'age'] < 0:
+                train_df.loc[idx,'age'] *= -1
+        
+        age_mean =  np.mean(test_df['age']) 
+        age_std =  np.std(test_df['age']) 
+        for idx in np.where(np.isnan(test_df['age']))[0]:
+            test_df.loc[idx,'age'] = int(np.random.normal(age_mean, age_std,1))
+            if test_df.loc[idx,'age'] < 0:
+                test_df.loc[idx,'age'] *= -1
+    
+    
     train_df['age'] = train_df['age'].apply(age_map)
-    test_df['age'] = test_df['age'].fillna(int(test_df['age'].mean()))
     test_df['age'] = test_df['age'].apply(age_map)
-
+    
+    
     # book 파트 인덱싱
-    if book_cat == 'basic': # 원본 카테고리
+    if process_cat == 'basic': # 원본 카테고리
         category2idx = {v:k for k,v in enumerate(context_df['category'].unique())}
         train_df['category'] = train_df['category'].map(category2idx)
         test_df['category'] = test_df['category'].map(category2idx)
-    elif book_cat == 'high': # 상위 카테고리
+    elif process_cat == 'high': # 상위 카테고리
         category2idx = {v:k for k,v in enumerate(context_df['category_high'].unique())}
         train_df['category_high'] = train_df['category_high'].map(category2idx)
         test_df['category_high'] = test_df['category_high'].map(category2idx)
@@ -116,7 +170,7 @@ def context_data_load(args):
     Args:
         data_path : str
             데이터 경로
-        book_cat : str
+        process_cat : str
             books 데이터에서 선택할 카테고리 (원본, 상위)
     ----------
     """
@@ -147,7 +201,7 @@ def context_data_load(args):
     test['isbn'] = test['isbn'].map(isbn2idx)
     books['isbn'] = books['isbn'].map(isbn2idx)
 
-    idx, context_train, context_test = process_context_data(users, books, train, test, args.book_cat)
+    idx, context_train, context_test = process_context_data(users, books, train, test, args.process_cat, args.process_age)
     field_dims = np.array([len(user2idx), len(isbn2idx),
                             6, len(idx['loc_city2idx']), len(idx['loc_state2idx']), len(idx['loc_country2idx']),
                             len(idx['category2idx']), len(idx['publisher2idx']), len(idx['language2idx']), len(idx['author2idx'])], dtype=np.uint32)
