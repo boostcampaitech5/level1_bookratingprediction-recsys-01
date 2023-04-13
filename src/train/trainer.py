@@ -7,7 +7,6 @@ import torch.nn as nn
 from torch.nn import MSELoss, HuberLoss
 from torch.optim import SGD, Adam
 
-
 class RMSELoss(nn.Module):
     def __init__(self):
         super(RMSELoss, self).__init__()
@@ -17,31 +16,53 @@ class RMSELoss(nn.Module):
         loss = torch.sqrt(criterion(x, y)+self.eps)
         return loss
 
-
 def train(args, model, dataloader, logger, setting):
+    wandb.init(project=args.project, entity=args.entity, name=args.name, tags=[args.model])
+    
+    ########### Parameters
+    loss_fn_ = args.loss_fn
+    lr = args.lr
+    optimizer_ = args.optimizer
+    epochs = args.epochs
+    
+    if args.sweep:
+        w_config = wandb.config
+        
+        if 'loss_fn' in w_config:
+            loss_fn_ = w_config['loss_fn']
+            
+        if 'lr' in w_config:
+            lr = w_config['lr']
+        
+        if 'optimizer' in w_config:
+            optimizer_ = w_config['optimizer']
+            
+        if 'epochs' in w_config:
+            epochs = w_config['epochs']
+    
     minimum_loss = 999999999
-    if args.loss_fn == 'MSE':
+    if loss_fn_ == 'MSE':
         loss_fn = MSELoss()
-    elif args.loss_fn == 'RMSE':
+    elif loss_fn_ == 'RMSE':
         loss_fn = RMSELoss()
-    elif args.loss_fn == 'Huber':
+    elif loss_fn_ == 'Huber':
         loss_fn = HuberLoss()
     else:
         pass
-    if args.optimizer == 'SGD':
-        optimizer = SGD(model.parameters(), lr=args.lr)
-    elif args.optimizer == 'ADAM':
-        optimizer = Adam(model.parameters(), lr=args.lr)
+    
+    if optimizer_ == 'SGD':
+        optimizer = SGD(model.parameters(), lr=lr)
+    elif optimizer_ == 'ADAM':
+        optimizer = Adam(model.parameters(), lr=lr)
     else:
         pass
-
-    #for early stopping
-    best_loss = 10 ** 2 # loss 초기값
-    patient_limit = args.patient_limit # 3번의 epoch까지 허용
-    patient_check = 0 # 연속적으로 개선되지 않은 epoch의 수
-
-    wandb.init(project=args.project, entity=args.entity, name=args.name)
-    for epoch in tqdm.tqdm(range(args.epochs)):
+        
+    for epoch in tqdm.tqdm(range(epochs)):
+        #for early stopping
+        best_loss = 10 ** 2 # loss 초기값
+        patient_limit = args.patient_limit # 3번의 epoch까지 허용
+        patient_check = 0 # 연속적으로 개선되지 않은 epoch의 수
+        
         model.train()
         total_loss = 0
         batch = 0
