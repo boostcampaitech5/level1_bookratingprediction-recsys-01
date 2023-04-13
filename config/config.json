@@ -1,21 +1,24 @@
 {
     "method": "grid",
     "metric": {
-        "name": "loss",
+        "name": "val_loss",
         "goal": "minimize"
     },
     "parameters": {
         "epochs": {
             "values": [5, 10, 30, 50]
         },
+        "model": {
+            "values": ["FM", "FFM", "NCF", "WDN", "DCN", "CNN_FM"]
+        },
+        "batch_size": {
+            "values": [512, 1024, 2048]
+        },
         "loss_fn": {
             "values": ["MSE", "RMSE"]
         },
         "optimizer": {
             "values": ["SGD", "ADAM"]
-        },
-        "batch_size": {
-            "values": [512, 1024]
         },
         "dropout": {
             "values": [0.1, 0.2, 0.3, 0.4, 0.5]

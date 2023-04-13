@@ -17,47 +17,25 @@ class RMSELoss(nn.Module):
         return loss
 
 def train(args, model, dataloader, logger, setting):
-    wandb.init(project=args.project, entity=args.entity, name=args.name, tags=[args.model])
-    
-    ########### Parameters
-    loss_fn_ = args.loss_fn
-    lr = args.lr
-    optimizer_ = args.optimizer
-    epochs = args.epochs
-    
-    if args.sweep:
-        w_config = wandb.config
-        
-        if 'loss_fn' in w_config:
-            loss_fn_ = w_config['loss_fn']
-            
-        if 'lr' in w_config:
-            lr = w_config['lr']
-        
-        if 'optimizer' in w_config:
-            optimizer_ = w_config['optimizer']
-            
-        if 'epochs' in w_config:
-            epochs = w_config['epochs']
     
     minimum_loss = 999999999
-    if loss_fn_ == 'MSE':
+    if args.loss_fn == 'MSE':
         loss_fn = MSELoss()
-    elif loss_fn_ == 'RMSE':
+    elif args.loss_fn == 'RMSE':
         loss_fn = RMSELoss()
-    elif loss_fn_ == 'Huber':
+    elif args.loss_fn == 'Huber':
         loss_fn = HuberLoss()
     else:
         pass
     
-    if optimizer_ == 'SGD':
-        optimizer = SGD(model.parameters(), lr=lr)
-    elif optimizer_ == 'ADAM':
-        optimizer = Adam(model.parameters(), lr=lr)
+    if args.optimizer == 'SGD':
+        optimizer = SGD(model.parameters(), lr=args.lr)
+    elif args.optimizer == 'ADAM':
+        optimizer = Adam(model.parameters(), lr=args.lr)
     else:
         pass
         
-    for epoch in tqdm.tqdm(range(epochs)):
+    for epoch in tqdm.tqdm(range(args.epochs)):
         #for early stopping
         best_loss = 10 ** 2 # loss 초기값
         patient_limit = args.patient_limit # 3번의 epoch까지 허용
@@ -99,7 +77,6 @@ def train(args, model, dataloader, logger, setting):
             best_loss = valid_loss
             patient_check = 0     
     logger.close()
-    wandb.finish()
     return model
 
 
