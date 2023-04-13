@@ -4,13 +4,14 @@ import wandb
 import pandas as pd
 import os
 import dotenv
+import config
+from functools import partial
 from src.utils import Logger, Setting, models_load, get_timestamp
 from src.data import context_data_load, context_data_split, context_data_loader
 from src.data import dl_data_load, dl_data_split, dl_data_loader
 from src.data import image_data_load, image_data_split, image_data_loader
 from src.data import text_data_load, text_data_split, text_data_loader
 from src.train import train, test, infer
-
 
 def main(args):
     Setting.seed_everything(args.seed)
@@ -65,6 +66,7 @@ def main(args):
     logger = Logger(args, log_path)
     logger.save_args()
     
+    ####################### WANDB
     WANDB_API_KEY = os.environ.get('WANDB_API_KEY')
     wandb.login(key=WANDB_API_KEY)
 
@@ -133,6 +135,7 @@ if __name__ == "__main__":
     arg('--project', type=str, default='book-rating-prediction')
     arg('--entity', type=str, default='recsys01')
     arg('--name', type=str, default=f'work-{get_timestamp()}')
+    arg('--sweep', type=bool, default=False)
     
 
     ############### GPU
@@ -163,6 +166,14 @@ if __name__ == "__main__":
     arg('--word_dim', type=int, default=768, help='DEEP_CONN에서 1D conv의 입력 크기를 조정할 수 있습니다.')
     arg('--out_dim', type=int, default=32, help='DEEP_CONN에서 1D conv의 출력 크기를 조정할 수 있습니다.')
 
-
     args = parser.parse_args()
-    main(args)
+    
+    if args.sweep:
+        s_config = config.sweep_config(args)
+        
+        sweep_id = wandb.sweep(s_config, entity=args.entity)
+        sweep_func = partial(main, args)
+        
+        wandb.agent(sweep_id, sweep_func, count=2)
+    else:
+        main(args)
