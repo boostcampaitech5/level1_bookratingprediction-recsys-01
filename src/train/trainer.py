@@ -4,7 +4,7 @@ import wandb
 import pandas as pd
 import torch
 import torch.nn as nn
-from torch.nn import MSELoss
+from torch.nn import MSELoss, HuberLoss
 from torch.optim import SGD, Adam
 
 
@@ -24,6 +24,8 @@ def train(args, model, dataloader, logger, setting):
         loss_fn = MSELoss()
     elif args.loss_fn == 'RMSE':
         loss_fn = RMSELoss()
+    elif args.loss_fn == 'Huber':
+        loss_fn = HuberLoss()
     else:
         pass
     if args.optimizer == 'SGD':

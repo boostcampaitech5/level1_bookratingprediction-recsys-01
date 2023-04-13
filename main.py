@@ -124,7 +124,7 @@ if __name__ == "__main__":
     arg('--batch_size', type=int, default=1024, help='Batch size를 조정할 수 있습니다.')
     arg('--epochs', type=int, default=10, help='Epoch 수를 조정할 수 있습니다.')
     arg('--lr', type=float, default=1e-3, help='Learning Rate를 조정할 수 있습니다.')
-    arg('--loss_fn', type=str, default='RMSE', choices=['MSE', 'RMSE'], help='손실 함수를 변경할 수 있습니다.')
+    arg('--loss_fn', type=str, default='RMSE', choices=['MSE', 'RMSE', 'Huber'], help='손실 함수를 변경할 수 있습니다.')
     arg('--optimizer', type=str, default='ADAM', choices=['SGD', 'ADAM'], help='최적화 함수를 변경할 수 있습니다.')
     arg('--weight_decay', type=float, default=1e-6, help='Adam optimizer에서 정규화에 사용하는 값을 조정할 수 있습니다.')
 
