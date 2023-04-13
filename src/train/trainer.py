@@ -4,7 +4,7 @@ import wandb
 import pandas as pd
 import torch
 import torch.nn as nn
-from torch.nn import MSELoss#, HuberLoss
+from torch.nn import MSELoss, HuberLoss
 from torch.optim import SGD, Adam
 
 
