@@ -35,6 +35,24 @@ def age_map(x) -> int:
         return 5
     else:
         return 6
+    
+def age_map_cat(x) -> int:
+    x = int(x)
+    if x < 20:
+        return 1
+    elif x >= 20 and x < 30:
+        return 2
+    elif x >= 30 and x < 40:
+        return 3
+    elif x >= 40 and x < 50:
+        return 4
+    elif x >= 50 and x < 60:
+        return 5
+    else:
+        return 6
+    
+    
+
 def process_context_data(users, books, ratings1, ratings2, process_cat, process_age):
     """
     Parameters
@@ -122,10 +140,25 @@ def process_context_data(users, books, ratings1, ratings2, process_cat, process_
             test_df.loc[idx,'age'] = int(np.random.normal(age_mean, age_std,1))
             if test_df.loc[idx,'age'] < 0:
                 test_df.loc[idx,'age'] *= -1
+
+    elif process_age == 'stratified': # fill NaN to have same distribution with origin
+        print("+++++++++++++++++++ processing Age : stratified +++++++++++++++++")
+        train_na_cnt = sum(np.isnan(train_df.age))
+        train_age_sample = (train_df['age'].dropna().apply(age_map_cat))
+        train_impute_list = train_age_sample.apply(lambda x : x.sample(n = train_na_cnt, replace = True, random_state = args.seed)).reset_index(drop = True)
+        for i,idx in enumerate(np.where(np.isnan(train_df['age']))[0]):
+            train_df.loc[idx,'age'] = train_impute_list.age[i]
+
+        test_na_cnt = sum(np.isnan(test_df.age))
+        test_age_sample = (test_df['age'].dropna().apply(age_map_cat))
+        test_impute_list = test_age_sample.apply(lambda x : x.sample(n = test_na_cnt, replace = True, random_state = args.seed)).reset_index(drop = True)
+        for i,idx in enumerate(np.where(np.isnan(test_df['age']))[0]):
+            test_df.loc[idx,'age'] = test_impute_list.age[i]
+
     
-    
-    train_df['age'] = train_df['age'].apply(age_map)
-    test_df['age'] = test_df['age'].apply(age_map)
+    if process_age != 'stratified':
+        train_df['age'] = train_df['age'].apply(age_map)
+        test_df['age'] = test_df['age'].apply(age_map)
     
     
     # book 파트 인덱싱
