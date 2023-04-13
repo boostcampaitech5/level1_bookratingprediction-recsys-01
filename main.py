@@ -175,6 +175,6 @@ if __name__ == "__main__":
         sweep_id = wandb.sweep(s_config, entity=args.entity)
         sweep_func = partial(main, args)
         
-        wandb.agent(sweep_id, sweep_func, count=2)
+        wandb.agent(sweep_id, sweep_func)
     else:
         main(args)
