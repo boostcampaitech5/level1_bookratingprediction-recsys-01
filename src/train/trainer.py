@@ -45,10 +45,11 @@ def train(args, model, dataloader, logger, setting):
         loss_fn = MSELoss()
     elif loss_fn_ == 'RMSE':
         loss_fn = RMSELoss()
-    elif args.loss_fn == 'Huber':
+    elif loss_fn_ == 'Huber':
         loss_fn = HuberLoss()
     else:
         pass
+    
     if optimizer_ == 'SGD':
         optimizer = SGD(model.parameters(), lr=lr)
     elif optimizer_ == 'ADAM':
