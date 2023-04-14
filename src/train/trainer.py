@@ -74,7 +74,7 @@ def train(args, model, dataloader, logger, setting):
             if patient_check >= patient_limit:
                 break
         else:
-            best_loss = valid_loss
+            best_loss = min(best_loss, valid_loss)
             patient_check = 0     
     logger.close()
     return model
