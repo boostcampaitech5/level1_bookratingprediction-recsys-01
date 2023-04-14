@@ -56,11 +56,12 @@ class CNN_Base(nn.Module):
 class CNN_FM(torch.nn.Module):
     def __init__(self, args, data):
         super().__init__()
-        self.field_dims = np.array([len(data['user2idx']), len(data['isbn2idx'])], dtype=np.uint32)
+        self.field_dims = data['field_dims']
+        n_field = data['field_dims'].shape[0]
         self.embedding = FeaturesEmbedding(self.field_dims, args.cnn_embed_dim)
         self.cnn = CNN_Base()
         self.fm = FactorizationMachine(
-                                        input_dim=(args.cnn_embed_dim * 2) + (12 * 1 * 1),
+                                        input_dim=(args.cnn_embed_dim *n_field) + (12 * 1 * 1),
                                         latent_dim=args.cnn_latent_dim,
                                         )
 

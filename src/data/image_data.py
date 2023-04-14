@@ -128,9 +128,13 @@ def image_data_load(args):
     img_train = process_img_data(train, books, user2idx, isbn2idx, train=True)
     img_test = process_img_data(test, books, user2idx, isbn2idx, train=False)
 
+    ########## Build context data
+    field_dims = np.array([len(user2idx), len(isbn2idx)], dtype=np.uint32)
+
     data = {
             'train':train,
             'test':test,
+            'field_dims':field_dims,
             'users':users,
             'books':books,
             'sub':sub,
