@@ -35,7 +35,7 @@ def age_map(x) -> int:
         return 5
     else:
         return 6
-def process_context_data(users, books, ratings1, ratings2, process_cat, process_age):
+def process_context_data(users, books, ratings1, ratings2, process_cat, process_age, process_loc):
     """
     Parameters
     ----------
@@ -74,17 +74,35 @@ def process_context_data(users, books, ratings1, ratings2, process_cat, process_
         test_df = ratings2.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author']], on='isbn', how='left')
 
 
-    # 인덱싱 처리
-    loc_city2idx = {v:k for k,v in enumerate(context_df['location_city'].unique())}
-    loc_state2idx = {v:k for k,v in enumerate(context_df['location_state'].unique())}
-    loc_country2idx = {v:k for k,v in enumerate(context_df['location_country'].unique())}
-
-    train_df['location_city'] = train_df['location_city'].map(loc_city2idx)
-    train_df['location_state'] = train_df['location_state'].map(loc_state2idx)
-    train_df['location_country'] = train_df['location_country'].map(loc_country2idx)
-    test_df['location_city'] = test_df['location_city'].map(loc_city2idx)
-    test_df['location_state'] = test_df['location_state'].map(loc_state2idx)
-    test_df['location_country'] = test_df['location_country'].map(loc_country2idx)
+    # Location 처리
+    print(f"+++++++++++++++++++ processing Loc : {process_loc} +++++++++++++++++")
+    loc_city2idx = None
+    loc_state2idx = None
+    loc_country2idx = None
+    if 'city' in process_loc:
+        loc_city2idx = {v:k for k,v in enumerate(context_df['location_city'].unique())}
+        train_df['location_city'] = train_df['location_city'].map(loc_city2idx) 
+        test_df['location_city'] = test_df['location_city'].map(loc_city2idx)
+    else:
+        train_df.drop(columns='location_city', inplace=True)
+        test_df.drop(columns='location_city', inplace=True)
+        
+    if 'state' in process_loc:
+        loc_state2idx = {v:k for k,v in enumerate(context_df['location_state'].unique())}
+        train_df['location_state'] = train_df['location_state'].map(loc_state2idx)
+        test_df['location_state'] = test_df['location_state'].map(loc_state2idx)
+    else:
+        train_df.drop(columns='location_state', inplace=True)
+        test_df.drop(columns='location_state', inplace=True)
+    
+    if 'country' in process_loc:
+        loc_country2idx = {v:k for k,v in enumerate(context_df['location_country'].unique())}
+        train_df['location_country'] = train_df['location_country'].map(loc_country2idx)
+        test_df['location_country'] = test_df['location_country'].map(loc_country2idx)
+    else:
+        train_df.drop(columns='location_country', inplace=True)
+        test_df.drop(columns='location_country', inplace=True)
+    
     
     # Age 결측치 처리
     if process_age == 'global_mean': # fill NaN with global mean
@@ -201,10 +219,15 @@ def context_data_load(args):
     test['isbn'] = test['isbn'].map(isbn2idx)
     books['isbn'] = books['isbn'].map(isbn2idx)
 
-    idx, context_train, context_test = process_context_data(users, books, train, test, args.process_cat, args.process_age)
-    field_dims = np.array([len(user2idx), len(isbn2idx),
-                            6, len(idx['loc_city2idx']), len(idx['loc_state2idx']), len(idx['loc_country2idx']),
-                            len(idx['category2idx']), len(idx['publisher2idx']), len(idx['language2idx']), len(idx['author2idx'])], dtype=np.uint32)
+    idx, context_train, context_test = process_context_data(users, books, train, test, args.process_cat, args.process_age, args.process_loc)
+    
+    ########## Build context data
+    size = [len(user2idx), len(isbn2idx), 6]
+    for xx2idx in ['loc_city2idx', 'loc_state2idx', 'loc_country2idx', 'category2idx', 'publisher2idx', 'language2idx', 'author2idx']:
+        if xx2idx in idx and idx[xx2idx]:
+            size.append(len(idx[xx2idx]))
+    
+    field_dims = np.array(size, dtype=np.uint32)
 
     data = {
             'train':context_train,
