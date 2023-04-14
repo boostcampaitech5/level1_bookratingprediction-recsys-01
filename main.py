@@ -135,6 +135,8 @@ if __name__ == "__main__":
     arg('--use_best_model', type=bool, default=True, help='검증 성능이 가장 좋은 모델 사용여부를 설정할 수 있습니다.')
     arg('--process_cat', type=str, default='basic', choices=['basic', 'high'], help='books 데이터의 카테고리를 선택할 수 있습니다.')
     arg('--process_age', type=str, default='global_mean', choices=['global_mean', 'zero_cat','stratified', 'loc_mean', 'rand_norm'], help='데이터의 결측치를 처리할 방법을 선택할 수 있습니다.')
+    arg('--process_loc', type=str, nargs='+', default=['city', 'state', 'country'], choices=['none', 'city', 'state', 'country'], help='usesr의 location을 구분할 기준을 선택할 수 있습니다. none을 선택하면 location은 drop됩니다.')
+
 
     ############### TRAINING OPTION
     arg('--batch_size', type=int, default=1024, help='Batch size를 조정할 수 있습니다.')
