@@ -94,10 +94,6 @@ def main(args):
     print(f'--------------- {args.model} PREDICT ---------------')
     predicts = test(args, model, data, setting)
     
-    
-    ######################## WANDB FINISH
-    wandb.finish()
-    
 
     ######################## SAVE PREDICT
     print(f'--------------- SAVE {args.model} PREDICT ---------------')
@@ -109,12 +105,17 @@ def main(args):
 
     filename = setting.get_submit_filename(args)
     submission.to_csv(filename, index=False)
+    wandb.save(filename)
+    
 
     ######################## INFERENCE & SAVE VALID
     print(f'--------------- INFERENCE & SAVE {args.model} VALID ---------------')
     result = infer(args, model, data, setting)
     result.to_csv(filename.replace('.csv', '_valid.csv'), index=False)
 
+
+    ######################## WANDB FINISH
+    wandb.finish()
 
 if __name__ == "__main__":
 
