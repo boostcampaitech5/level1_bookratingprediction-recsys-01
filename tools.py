@@ -7,7 +7,7 @@ def get_valid_result(name: str) -> Dict:
     '''
     [description]
     실험의 vaildation 데이터에 대한 예측결과를 딕셔너리로 반환하는 함수입니다.
-    (주의) root 경로에 있는 노트북에서 실행해야 정상적으로 동작합니다.
+    (주의) root 디렉토리에 있는 노트북에서 실행해야 정상적으로 동작합니다.
 
     [arguments]
     name : 실험명 ex) 'work-230413_030817_NCF'
