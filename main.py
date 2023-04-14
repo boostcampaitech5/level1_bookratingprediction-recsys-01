@@ -11,6 +11,7 @@ from src.data import context_data_load, context_data_split, context_data_loader
 from src.data import dl_data_load, dl_data_split, dl_data_loader
 from src.data import image_data_load, image_data_split, image_data_loader
 from src.data import text_data_load, text_data_split, text_data_loader
+from src.data import image_context_data_load, image_context_data_split, image_context_data_loader
 from src.train import train, test, infer
 
 def main(args):
@@ -37,7 +38,10 @@ def main(args):
     elif args.model in ('NCF', 'WDN', 'DCN'):
         data = dl_data_load(args)
     elif args.model == 'CNN_FM':
-        data = image_data_load(args)
+        if args.cnn_feed_context:
+            data = image_context_data_load(args)
+        else:
+            data = image_data_load(args)
     elif args.model == 'DeepCoNN':
         import nltk
         nltk.download('punkt')
@@ -57,8 +61,12 @@ def main(args):
         data = dl_data_loader(args, data)
 
     elif args.model=='CNN_FM':
-        data = image_data_split(args, data)
-        data = image_data_loader(args, data)
+        if args.cnn_feed_context:
+            data = image_context_data_split(args, data)
+            data = image_context_data_loader(args, data)
+        else:
+            data = image_data_split(args, data)
+            data = image_data_loader(args, data)
 
     elif args.model=='DeepCoNN':
         data = text_data_split(args, data)
@@ -173,6 +181,7 @@ if __name__ == "__main__":
     ############### CNN_FM
     arg('--cnn_embed_dim', type=int, default=64, help='CNN_FM에서 user와 item에 대한 embedding시킬 차원을 조정할 수 있습니다.')
     arg('--cnn_latent_dim', type=int, default=12, help='CNN_FM에서 user/item/image에 대한 latent 차원을 조정할 수 있습니다.')
+    arg('--cnn_feed_context', type=bool, default=False, help='CNN_FM의 입력으로 context data를 줍니다.')
 
 
     ############### DeepCoNN
