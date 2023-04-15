@@ -12,6 +12,7 @@ from src.data import dl_data_load, dl_data_split, dl_data_loader
 from src.data import image_data_load, image_data_split, image_data_loader
 from src.data import text_data_load, text_data_split, text_data_loader
 from src.data import image_context_data_load, image_context_data_split, image_context_data_loader
+from src.data import image_text_data_load, image_text_data_split, image_text_data_loader
 from src.train import train, test, infer
 
 def main(args):
@@ -46,6 +47,11 @@ def main(args):
         import nltk
         nltk.download('punkt')
         data = text_data_load(args)
+    elif args.model == 'DeepCoNN_CNN':
+        import nltk
+        nltk.download('punkt')
+        data = image_text_data_load(args)
+    
     else:
         pass
 
@@ -71,6 +77,11 @@ def main(args):
     elif args.model=='DeepCoNN':
         data = text_data_split(args, data)
         data = text_data_loader(args, data)
+        
+    elif args.model=='DeepCoNN_CNN':
+        data = image_text_data_split(args, data)
+        data = image_text_data_loader(args, data)
+    
     else:
         pass
 
@@ -106,7 +117,7 @@ def main(args):
     ######################## SAVE PREDICT
     print(f'--------------- SAVE {args.model} PREDICT ---------------')
     submission = pd.read_csv(args.data_path + 'sample_submission.csv')
-    if args.model in ('FM', 'FFM', 'NCF', 'WDN', 'DCN', 'CNN_FM', 'DeepCoNN'):
+    if args.model in ('FM', 'FFM', 'NCF', 'WDN', 'DCN', 'CNN_FM', 'DeepCoNN', 'DeepCoNN_CNN'):
         submission['rating'] = predicts
     else:
         pass
@@ -138,7 +149,7 @@ if __name__ == "__main__":
     ############### BASIC OPTION
     arg('--data_path', type=str, default='../data/', help='Data path를 설정할 수 있습니다.')
     arg('--saved_model_path', type=str, default='./saved_models', help='Saved Model path를 설정할 수 있습니다.')
-    arg('--model', type=str, choices=['FM', 'FFM', 'NCF', 'WDN', 'DCN', 'CNN_FM', 'DeepCoNN'],
+    arg('--model', type=str, choices=['FM', 'FFM', 'NCF', 'WDN', 'DCN', 'CNN_FM', 'DeepCoNN', 'DeepCoNN_CNN'],
                                 help='학습 및 예측할 모델을 선택할 수 있습니다.')
     arg('--data_shuffle', type=bool, default=True, help='데이터 셔플 여부를 조정할 수 있습니다.')
     arg('--test_size', type=float, default=0.2, help='Train/Valid split 비율을 조정할 수 있습니다.')
@@ -186,7 +197,7 @@ if __name__ == "__main__":
     arg('--cnn_feed_context', type=bool, default=False, help='CNN_FM의 입력으로 context data를 줍니다.')
 
 
-    ############### DeepCoNN
+    ############### DeepCoNN, DeepCoNN_CNN
     arg('--vector_create', type=bool, default=False, help='DEEP_CONN에서 text vector 생성 여부를 조정할 수 있으며 최초 학습에만 True로 설정하여야합니다.')
     arg('--deepconn_embed_dim', type=int, default=32, help='DEEP_CONN에서 user와 item에 대한 embedding시킬 차원을 조정할 수 있습니다.')
     arg('--deepconn_latent_dim', type=int, default=10, help='DEEP_CONN에서 user/item/image에 대한 latent 차원을 조정할 수 있습니다.')
