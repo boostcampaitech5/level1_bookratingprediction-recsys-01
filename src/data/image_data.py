@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from torch.autograd import Variable
 from tqdm import tqdm
+from src.utils import Cache
 
 
 class Image_Dataset(Dataset):
@@ -77,14 +78,25 @@ def process_img_data(df, books, user2idx, isbn2idx, train=False):
     df_ = pd.merge(df_, books_[['isbn', 'img_path']], on='isbn', how='left')
     df_['img_path'] = df_['img_path'].apply(lambda x: '../data/'+x)
     img_vector_df = df_[['img_path']].drop_duplicates().reset_index(drop=True).copy()
-    data_box = []
-    for idx, path in tqdm(enumerate(sorted(img_vector_df['img_path']))):
-        data = image_vector(path)
-        if data.size()[0] == 3:
-            data_box.append(np.array(data))
-        else:
-            data_box.append(np.array(data.expand(3, data.size()[1], data.size()[2])))
-    img_vector_df['img_vector'] = data_box
+    
+    img_path_hash = Cache.hash(img_vector_df['img_path'])
+    cache = Cache.load(img_path_hash)
+    if cache is not None:
+        print(f'image vector found: cache [{img_path_hash}]')
+        img_vector_df['img_vector'] = cache
+    
+    else:
+        data_box = []
+        for idx, path in tqdm(enumerate(sorted(img_vector_df['img_path']))):
+            data = image_vector(path)
+            if data.size()[0] == 3:
+                data_box.append(np.array(data))
+            else:
+                data_box.append(np.array(data.expand(3, data.size()[1], data.size()[2])))
+            
+        img_vector_df['img_vector'] = data_box
+        Cache.dump(img_path_hash, img_vector_df['img_vector'])
+        
     df_ = pd.merge(df_, img_vector_df, on='img_path', how='left')
     return df_
 
