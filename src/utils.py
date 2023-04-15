@@ -57,8 +57,10 @@ def models_load(args, data):
         model = DeepCoNN(args, data).to(args.device)
     elif args.model=='DeepCoNN_CNN':
         model = DeepCoNN_CNN(args, data).to(args.device)
+    elif args.model=='FFDCN':
+        model = FieldAwareFactorizationDeepCrossNetworkModel(args, data).to(args.device)
     else:
-        raise ValueError('MODEL is not exist : select model in [FM,FFM,NCF,WDN,DCN,CNN_FM,DeepCoNN,DeepCoNN_CNN]')
+        raise ValueError('MODEL is not exist : select model in [FM,FFM,NCF,WDN,DCN,CNN_FM,DeepCoNN,DeepCoNN_CNN,FFDCN]')
     return model
 
 
