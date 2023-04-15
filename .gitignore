@@ -14,6 +14,8 @@ ipython_config.py
 .log
 log
 wandb
+submit
+saved_models
 
 # MacOS
 .DS_Store
