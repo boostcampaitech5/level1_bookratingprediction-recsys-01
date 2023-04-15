@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import logging
 import json
+import pandas as pd
 from datetime import datetime, timedelta
 from .models import *
 
@@ -185,3 +186,50 @@ class Logger:
 
     def __del__(self):
         self.close()
+
+class Cache:
+    
+    @staticmethod
+    def dump(key, data):
+        """
+        Parameters
+        ----------
+        key : str
+            덤핑되는 파일 이름
+        data : any
+            저장할 object
+        ----------
+        """
+        if not os.path.exists('__pycache__'):
+            os.makedirs('__pycache__')
+        
+        fpath = f'__pycache__/{key}.pt'
+        torch.save(data, fpath)
+        
+        
+    @staticmethod
+    def load(key):
+        """
+        Parameters
+        ----------
+        key : str
+            불러올 데이터의 key
+        ----------
+        """
+        fpath = f'__pycache__/{key}.pt'
+        if os.path.exists(fpath):
+            return torch.load(fpath)
+        
+        return None
+    
+    
+    @staticmethod
+    def hash(series):
+        """
+        Parameters
+        ----------
+        series : pandas.Series
+            불러올 데이터의 key
+        ----------
+        """
+        return pd.util.hash_pandas_object(series).sum()
