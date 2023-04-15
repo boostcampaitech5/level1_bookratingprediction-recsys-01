@@ -119,7 +119,9 @@ def main(args):
     ######################## INFERENCE & SAVE VALID
     print(f'--------------- INFERENCE & SAVE {args.model} VALID ---------------')
     result = infer(args, model, data, setting)
-    result.to_csv(filename.replace('.csv', '_valid.csv'), index=False)
+    valid_filename = filename.replace('.csv', '_valid.csv')
+    result.to_csv(valid_filename, index=False)
+    wandb.save(valid_filename)
 
 
     ######################## WANDB FINISH
