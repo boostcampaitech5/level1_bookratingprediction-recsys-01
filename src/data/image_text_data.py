@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from .image_data import image_data_load
 from .text_data import text_data_load
 from torch.utils.data import DataLoader, Dataset
+from src.utils import get_sampler
 
 
 class Image_Text_Dataset(Dataset):
@@ -154,8 +155,8 @@ def image_text_data_loader(args, data):
                                 data['test']['rating'].values
                                 )
 
-    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=0, shuffle=True)
-    valid_dataloader = DataLoader(valid_dataset, batch_size=args.batch_size, num_workers=0, shuffle=False)
-    test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=0, shuffle=False)
+    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, sampler=get_sampler(args, data['y_train'].values))
+    valid_dataloader = DataLoader(valid_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
+    test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
     data['train_dataloader'], data['valid_dataloader'], data['test_dataloader'] = train_dataloader, valid_dataloader, test_dataloader
     return data

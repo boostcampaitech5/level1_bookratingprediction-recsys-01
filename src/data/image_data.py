@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from torch.autograd import Variable
 from tqdm import tqdm
-from src.utils import Cache
+from src.utils import Cache, get_sampler
 
 
 class Image_Dataset(Dataset):
@@ -211,8 +211,8 @@ def image_data_loader(args, data):
                                 data['img_test']['rating'].values
                                 )
 
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=0, shuffle=True)
-    valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, num_workers=0, shuffle=False)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, num_workers=0, shuffle=False)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, sampler=get_sampler(args, data['y_train'].values))
+    valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
     data['train_dataloader'], data['valid_dataloader'], data['test_dataloader'] = train_dataloader, valid_dataloader, test_dataloader
     return data
