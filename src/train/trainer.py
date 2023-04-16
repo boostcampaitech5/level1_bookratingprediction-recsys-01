@@ -4,37 +4,38 @@ import wandb
 import pandas as pd
 import torch
 import torch.nn as nn
-from torch.nn import MSELoss, HuberLoss
-from torch.optim import SGD, Adam
+import numpy as np
+from torch.utils.data import SubsetRandomSampler, DataLoader
+from sklearn.model_selection import KFold
 
-class RMSELoss(nn.Module):
-    def __init__(self):
-        super(RMSELoss, self).__init__()
-        self.eps = 1e-6
-    def forward(self, x, y):
-        criterion = MSELoss()
-        loss = torch.sqrt(criterion(x, y)+self.eps)
-        return loss
 
-def train(args, model, dataloader, logger, setting):
+def cv_train(args, model, dataloader, loss_fn, optimizer, logger, setting):
+    origin_train_dataloader = dataloader['train_dataloader']
+    origin_valid_dataloader = dataloader['valid_dataloader']
     
-    minimum_loss = 999999999
-    if args.loss_fn == 'MSE':
-        loss_fn = MSELoss()
-    elif args.loss_fn == 'RMSE':
-        loss_fn = RMSELoss()
-    elif args.loss_fn == 'Huber':
-        loss_fn = HuberLoss()
-    else:
-        pass
+    dataset = origin_train_dataloader.dataset
+    ## TODO:: StratifiedKFold
+    cv = KFold(n_splits= 5, shuffle=True, random_state=args.seed)
     
-    if args.optimizer == 'SGD':
-        optimizer = SGD(model.parameters(), lr=args.lr)
-    elif args.optimizer == 'ADAM':
-        optimizer = Adam(model.parameters(), lr=args.lr)
-    else:
-        pass
+    for fold, (tra_idx, val_idx) in tqdm.tqdm(enumerate(cv.split(dataset)), position=0):
+        train_sampler = SubsetRandomSampler(tra_idx)
+        valid_sampler = SubsetRandomSampler(val_idx)
+        dataloader['train_dataloader'] = DataLoader(dataset, batch_size=args.batch_size, sampler=train_sampler)
+        dataloader['valid_dataloader'] = DataLoader(dataset, batch_size=args.batch_size, sampler=valid_sampler)
+        train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=False)
         
+        # validation
+        dataloader['valid_dataloader'] = origin_valid_dataloader
+        valid_loss = valid(args, model, dataloader, loss_fn)
+        print(f'Fold: {fold+1}, valid_loss: {valid_loss:.3f}')
+        logger.log(fold=fold+1, valid_loss=valid_loss)
+        wandb.log({'fold': fold, 'val_loss': valid_loss})
+        
+    return model
+    
+
+def train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=True):
+    minimum_loss = 999999999
     for epoch in tqdm.tqdm(range(args.epochs)):
         #for early stopping
         best_loss = 10 ** 2 # loss 초기값
@@ -62,9 +63,12 @@ def train(args, model, dataloader, logger, setting):
             total_loss += loss.item()
             batch +=1
         valid_loss = valid(args, model, dataloader, loss_fn)
-        print(f'Epoch: {epoch+1}, Train_loss: {total_loss/batch:.3f}, valid_loss: {valid_loss:.3f}')
-        logger.log(epoch=epoch+1, train_loss=total_loss/batch, valid_loss=valid_loss)
-        wandb.log({'epoch': epoch, 'tra_loss': total_loss/batch, 'val_loss': valid_loss})
+        if need_log:
+            print(f'Epoch: {epoch+1}, Train_loss: {total_loss/batch:.3f}, valid_loss: {valid_loss:.3f}')
+            logger.log(epoch=epoch+1, train_loss=total_loss/batch, valid_loss=valid_loss)
+            wandb.log({'epoch': epoch, 'tra_loss': total_loss/batch, 'val_loss': valid_loss})
+        else:
+            wandb.log({'fepoch': epoch, 'ftra_loss': total_loss/batch, 'fval_loss': valid_loss})
         
         if minimum_loss > valid_loss:
             minimum_loss = valid_loss
@@ -78,7 +82,7 @@ def train(args, model, dataloader, logger, setting):
         else:
             best_loss = valid_loss
             patient_check = 0     
-    logger.close()
+    
     return model
 
 

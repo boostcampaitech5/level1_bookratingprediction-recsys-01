@@ -8,6 +8,8 @@ import logging
 import json
 import pandas as pd
 from datetime import datetime, timedelta
+from torch.nn import MSELoss, HuberLoss
+from torch.optim import SGD, Adam
 from .models import *
 
 
@@ -62,6 +64,51 @@ def models_load(args, data):
     else:
         raise ValueError('MODEL is not exist : select model in [FM,FFM,NCF,WDN,DCN,CNN_FM,DeepCoNN,DeepCoNN_CNN,FFDCN]')
     return model
+
+
+def loss_fn_load(args):
+    '''
+    [description]
+    입력받은 args 값에 따라 loss function을 선택하며, loss function이 존재하지 않을 경우 None을 반환합니다.
+
+    [arguments]
+    args : argparse로 입력받은 args 값으로 이를 통해 loss function을 선택합니다.
+    ''' 
+    if args.loss_fn == 'MSE':
+        return MSELoss()
+    elif args.loss_fn == 'RMSE':
+        return RMSELoss()
+    elif args.loss_fn == 'Huber':
+        return HuberLoss()
+    
+    return None
+
+
+def optimizer_load(args, model):
+    '''
+    [description]
+    입력받은 args 값에 따라 optimizer를 선택하며, optimizer가 존재하지 않을 경우 None을 반환합니다.
+
+    [arguments]
+    args : argparse로 입력받은 args 값으로 이를 통해 모델을 선택합니다.
+    model : 학습대상의 model을 입력합니다.
+    ''' 
+    if args.optimizer == 'SGD':
+        return SGD(model.parameters(), lr=args.lr)
+    elif args.optimizer == 'ADAM':
+        return Adam(model.parameters(), lr=args.lr)
+    
+    return None
+
+
+class RMSELoss(nn.Module):
+    def __init__(self):
+        super(RMSELoss, self).__init__()
+        self.eps = 1e-6
+    def forward(self, x, y):
+        criterion = MSELoss()
+        loss = torch.sqrt(criterion(x, y)+self.eps)
+        return loss
 
 
 class Setting:
@@ -155,7 +202,7 @@ class Logger:
         self.file_handler.setFormatter(self.formatter)
         self.logger.addHandler(self.file_handler)
 
-    def log(self, epoch, train_loss, valid_loss):
+    def log(self, epoch=None, train_loss=None, valid_loss=None, fold=None):
         '''
         [description]
         log file에 epoch, train loss, valid loss를 기록하는 함수입니다.
@@ -165,8 +212,19 @@ class Logger:
         epoch : epoch
         train_loss : train loss
         valid_loss : valid loss
+        fold : fold
         '''
-        message = f'epoch : {epoch}/{self.args.epochs} | train loss : {train_loss:.3f} | valid loss : {valid_loss:.3f}'
+        messages = []
+        if epoch is not None:
+            messages.append(f'epoch : {epoch}/{self.args.epochs}')
+        if train_loss is not None:
+            messages.append(f'train loss : {train_loss:.3f}')
+        if valid_loss is not None:
+            messages.append(f'valid loss : {valid_loss:.3f}')
+        if fold is not None:
+            messages.append(f'fold : {fold}')
+            
+        message = ' | '.join(messages)
         self.logger.info(message)
 
     def close(self):

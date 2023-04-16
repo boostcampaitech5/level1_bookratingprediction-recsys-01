@@ -6,14 +6,14 @@ import os
 import dotenv
 import config
 from functools import partial
-from src.utils import Logger, Setting, models_load, get_timestamp
+from src.utils import Logger, Setting, models_load, loss_fn_load, optimizer_load, get_timestamp
 from src.data import context_data_load, context_data_split, context_data_loader
 from src.data import dl_data_load, dl_data_split, dl_data_loader
 from src.data import image_data_load, image_data_split, image_data_loader
 from src.data import text_data_load, text_data_split, text_data_loader
 from src.data import image_context_data_load, image_context_data_split, image_context_data_loader
 from src.data import image_text_data_load, image_text_data_split, image_text_data_loader
-from src.train import train, test, infer
+from src.train import train, test, infer, cv_train
 
 def main(args):
     Setting.seed_everything(args.seed)
@@ -99,14 +99,19 @@ def main(args):
     wandb.login(key=WANDB_API_KEY)
 
 
-    ######################## Model
+    ######################## Model & loss_fn & optimizer
     print(f'--------------- INIT {args.model} ---------------')
     model = models_load(args,data)
+    loss_fn = loss_fn_load(args)
+    optimizer = optimizer_load(args,model)
 
 
     ######################## TRAIN
     print(f'--------------- {args.model} TRAINING ---------------')
-    model = train(args, model, data, logger, setting)
+    if args.cross_validation:
+        model = cv_train(args, model, data, loss_fn, optimizer, logger, setting)
+    else:
+        model = train(args, model, data, loss_fn, optimizer, logger, setting)
 
 
     ######################## INFERENCE
@@ -135,7 +140,8 @@ def main(args):
     wandb.save(valid_filename)
 
 
-    ######################## WANDB FINISH
+    ######################## WANDB & Logger FINISH
+    logger.close()
     wandb.finish()
 
 if __name__ == "__main__":
@@ -168,6 +174,7 @@ if __name__ == "__main__":
     arg('--optimizer', type=str, default='ADAM', choices=['SGD', 'ADAM'], help='최적화 함수를 변경할 수 있습니다.')
     arg('--weight_decay', type=float, default=1e-6, help='Adam optimizer에서 정규화에 사용하는 값을 조정할 수 있습니다.')
     arg('--patient_limit', type=int, default=10**5, help='early stopping의 허용범위를 지정할 수 있습니다.')
+    arg('-cv', '--cross_validation', type=bool, default=False, help='K-Fold cross validation을 사용할 수 있습니다.')
 
 
     ############### WANDB OPTION
