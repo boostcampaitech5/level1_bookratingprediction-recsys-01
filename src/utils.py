@@ -10,8 +10,21 @@ import pandas as pd
 from datetime import datetime, timedelta
 from torch.nn import MSELoss, HuberLoss
 from torch.optim import SGD, Adam
+from torch.utils.data.sampler import WeightedRandomSampler
 from .models import *
 
+
+def get_sampler(args, y):
+    if args.sampler == None:
+        sampler = None
+    elif args.sampler == 'weighted': 
+        labels = list(y)
+        class_count = np.unique(labels, return_counts=True)[1]
+        weights = 1.0 / torch.tensor([class_count[label-1] for label in labels], dtype=torch.float)
+        sampler = WeightedRandomSampler(weights=weights, num_samples=len(labels), replacement=True)
+    else:
+        raise NotImplementedError
+    return sampler
 
 def get_timestamp(date_format: str = '%y%m%d_%H%M%S') -> str:
     timestamp = datetime.now()
