@@ -38,20 +38,137 @@ def age_map(x) -> int:
         return 6
     
 def age_map_cat(x) -> int:
-      x = int(x)
-      if x < 20:
-          return 1
-      elif x >= 20 and x < 30:
-          return 2
-      elif x >= 30 and x < 40:
-          return 3
-      elif x >= 40 and x < 50:
-          return 4
-      elif x >= 50 and x < 60:
-          return 5
-      else:
-          return 6
-          
+    x = int(x)
+    if x < 20:
+        return 1
+    elif x >= 20 and x < 30:
+        return 2
+    elif x >= 30 and x < 40:
+        return 3
+    elif x >= 40 and x < 50:
+        return 4
+    elif x >= 50 and x < 60:
+        return 5
+    else:
+        return 6
+    
+    
+def year_map_cat(x) -> int:
+    x = int(x)
+    if x < 1960:
+        return 1950
+    elif x >= 1960 and x < 1970:
+        return 1960
+    elif x >= 1970 and x < 1980:
+        return 1970
+    elif x >= 1980 and x < 1990:
+        return 1980
+    elif x >= 1990 and x < 2000:
+        return 1990
+    else:
+        return 2000
+    
+
+def catboost_Data(args):
+    
+    """
+    Parameters
+    ----------
+    users : pd.DataFrame
+        users.csv를 인덱싱한 데이터
+    books : pd.DataFrame
+        books.csv를 인덱싱한 데이터
+    ratings1 : pd.DataFrame
+        train 데이터의 rating
+    ratings2 : pd.DataFrame
+        test 데이터의 rating
+    process_cat : str
+        books 데이터에서 선택할 카테고리 (원본, 상위)
+    process_age : str
+        Age 데이터의 결측치를 처리할 방법 (global_mean, zero_cat, rand_norm, stratified)
+    ----------
+    """
+
+    ######################## DATA LOAD
+    users = pd.read_csv(args.data_path + 'users.csv')
+    books = pd.read_csv(args.data_path + 'books.csv')
+    train = pd.read_csv(args.data_path + 'train_ratings.csv')
+    test = pd.read_csv(args.data_path + 'test_ratings.csv')
+    sub = pd.read_csv(args.data_path + 'sample_submission.csv')
+
+    ids = pd.concat([train['user_id'], sub['user_id']]).unique()
+    isbns = pd.concat([train['isbn'], sub['isbn']]).unique()
+
+    # 발행연도 mapping
+    books['year_of_publication']=books['year_of_publication'].map(year_map_cat)
+    
+    # Age 결측치 처리
+    if args.process_age == 'global_mean': # fill NaN with global mean
+        print("+++++++++++++++++++ processing Age : global_mean +++++++++++++++++")
+        users['age'] = users['age'].fillna(int(users['age'].mean()))
+    elif args.process_age == 'zero_cat': # fill NaN with zero_cat
+        print("+++++++++++++++++++ processing Age : zero_cat +++++++++++++++++")
+    elif args.process_age == 'rand_norm': # fill NaN with random numb from normal Dis
+        print("+++++++++++++++++++ processing Age : rand_norm +++++++++++++++++")
+        np.random.seed(args.seed)
+        age_mean =  np.mean(users['age']) 
+        age_std =  np.std(users['age']) 
+        for idx in np.where(np.isnan(users['age']))[0]:
+            users.loc[idx,'age'] = int(np.random.normal(age_mean, age_std,1))
+            if users.loc[idx,'age'] < 0:
+                users.loc[idx,'age'] *= -1
+                
+    #location 전처리
+    users['location_city'] = users['location'].apply(lambda x: x.split(',')[0])
+    users['location_state'] = users['location'].apply(lambda x: x.split(',')[1])
+    users['location_country'] = users['location'].apply(lambda x: x.split(',')[-1])
+    users = users.drop(['location'], axis=1)
+    
+    ratings1 = train
+    ratings2 = test
+
+    # 인덱싱 처리된 데이터 조인
+    if args.process_cat == 'basic': # 원본 카테고리
+        print("+++++++++++++++++++ processing cat : BASIC +++++++++++++++++")
+        train_df = ratings1.merge(users, on='user_id', how='left').merge(books[['isbn', 'category', 'publisher', 'language', 'book_author','year_of_publication']], on='isbn', how='left')
+        test_df = ratings2.merge(users, on='user_id', how='left').merge(books[['isbn', 'category', 'publisher', 'language', 'book_author','year_of_publication']], on='isbn', how='left')
+        train_df['category'] = train_df['category'].fillna("na")
+        test_df['category'] = test_df['category'].fillna("na") 
+
+    elif args.process_cat == 'high': # 상위 카테고리
+        print("+++++++++++++++++++ processing cat : HIGH +++++++++++++++++")
+        train_df = ratings1.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author','year_of_publication']], on='isbn', how='left')
+        test_df = ratings2.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author', 'year_of_publication']], on='isbn', how='left')
+        train_df['category_high'] = train_df['category_high'].fillna("na")
+        test_df['category_high'] = test_df['category_high'].fillna("na")
+
+    
+    # Age 결측치 처리
+    if args.process_age == 'stratified': # fill NaN to have same distribution with origin
+        print("+++++++++++++++++++ processing Age : stratified +++++++++++++++++")
+        train_na_cnt = sum(np.isnan(train_df.age))
+        train_age_sample = (train_df['age'].dropna().apply(age_map_cat))
+        train_impute_list = train_age_sample.apply(lambda x : x.sample(n = train_na_cnt, replace = True, random_state = args.seed)).reset_index(drop = True)
+        for i,idx in enumerate(np.where(np.isnan(train_df['age']))[0]):
+            train_df.loc[idx,'age'] = train_impute_list.age[i]
+
+        test_na_cnt = sum(np.isnan(test_df.age))
+        test_age_sample = (test_df['age'].dropna().apply(age_map_cat))
+        test_impute_list = test_age_sample.apply(lambda x : x.sample(n = test_na_cnt, replace = True, random_state = args.seed)).reset_index(drop = True)
+        for i,idx in enumerate(np.where(np.isnan(test_df['age']))[0]):
+            test_df.loc[idx,'age'] = test_impute_list.age[i]
+
+    
+    if args.process_age != 'stratified':
+        train_df['age'] = train_df['age'].apply(age_map)
+        test_df['age'] = test_df['age'].apply(age_map)
+      
+    #language 결측 'na'로 처리.
+    train_df['language'] = train_df['language'].fillna("na") 
+    test_df['language'] = test_df['language'].fillna("na")
+        
+ 
+    return train_df, test_df
 
 def process_context_data(users, books, ratings1, ratings2, process_cat, process_age, process_loc):
     """
