@@ -116,8 +116,11 @@ def main(args):
 
     ######################## INFERENCE
     print(f'--------------- {args.model} PREDICT ---------------')
-    predicts = test(args, model, data, setting)
-    
+    if args.oof == True:
+        predicts = oof_test(args, model, data, setting)
+    else:
+        predicts = test(args, model, data, setting)
+
 
     ######################## SAVE PREDICT
     print(f'--------------- SAVE {args.model} PREDICT ---------------')
@@ -175,6 +178,7 @@ if __name__ == "__main__":
     arg('--weight_decay', type=float, default=1e-6, help='Adam optimizer에서 정규화에 사용하는 값을 조정할 수 있습니다.')
     arg('--patient_limit', type=int, default=10**5, help='early stopping의 허용범위를 지정할 수 있습니다.')
     arg('-cv', '--cross_validation', type=bool, default=False, help='K-Fold cross validation을 사용할 수 있습니다.')
+    arg('-oof', type=bool, default=False, help='Out of fold를 사용할 수 있습니다.')
 
 
     ############### WANDB OPTION
