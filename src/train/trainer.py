@@ -22,7 +22,7 @@ def cv_train(args, model, dataloader, loss_fn, optimizer, logger, setting):
         valid_sampler = SubsetRandomSampler(val_idx)
         dataloader['train_dataloader'] = DataLoader(dataset, batch_size=args.batch_size, sampler=train_sampler)
         dataloader['valid_dataloader'] = DataLoader(dataset, batch_size=args.batch_size, sampler=valid_sampler)
-        train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=False)
+        train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=False, fold=str(fold))
         
         # validation
         dataloader['valid_dataloader'] = origin_valid_dataloader
@@ -34,7 +34,7 @@ def cv_train(args, model, dataloader, loss_fn, optimizer, logger, setting):
     return model
     
 
-def train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=True):
+def train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=True, fold=""):
     minimum_loss = 999999999
     for epoch in tqdm.tqdm(range(args.epochs)):
         #for early stopping
@@ -73,7 +73,7 @@ def train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log
         if minimum_loss > valid_loss:
             minimum_loss = valid_loss
             os.makedirs(args.saved_model_path, exist_ok=True)
-            torch.save(model.state_dict(), f'{args.saved_model_path}/{setting.save_time}_{args.model}_model.pt')
+            torch.save(model.state_dict(), f'{args.saved_model_path}/{setting.save_time}_{args.model}_model{fold}.pt')
 
         if valid_loss > best_loss:
             patient_check += 1
@@ -108,12 +108,10 @@ def valid(args, model, dataloader, loss_fn):
     return valid_loss
 
 
-def test(args, model, dataloader, setting):
+def test(args, model, dataloader, setting, fold=""):
     predicts = list()
-    if args.use_best_model == True:
-        model.load_state_dict(torch.load(f'./saved_models/{setting.save_time}_{args.model}_model.pt'))
-    else:
-        pass
+    model.load_state_dict(torch.load(f'./saved_models/{setting.save_time}_{args.model}_model{fold}.pt'))
+
     model.eval()
 
     for idx, data in enumerate(dataloader['test_dataloader']):
@@ -129,6 +127,15 @@ def test(args, model, dataloader, setting):
         predicts.extend(y_hat.tolist())
     return predicts
 
+def oof_test(args, model, dataloader, setting):
+    k = 5
+    predicts_list = []
+    for fold in range(k):
+        predicts_fold = np.array(test(args, model, dataloader, setting, str(fold)))
+        predicts_list.append(predicts_fold)
+
+    predicts = np.sum(predicts_list, axis=0) / k
+    return list(predicts)
 
 def infer(args, model, dataloader, setting):
     predicts = list()
