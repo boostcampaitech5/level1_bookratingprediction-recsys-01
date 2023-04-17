@@ -36,16 +36,30 @@ class FeaturesEmbedding(nn.Module):
 
 # 이미지 특징 추출을 위한 기초적인 CNN Layer를 정의합니다.
 class CNN_Base(nn.Module):
-    def __init__(self, ):
+    def __init__(self, layer_num: int):
         super(CNN_Base, self).__init__()
-        self.cnn_layer = nn.Sequential(
-                                        nn.Conv2d(3, 6, kernel_size=3, stride=2, padding=1),
-                                        nn.ReLU(),
-                                        nn.MaxPool2d(kernel_size=3, stride=2),
-                                        nn.Conv2d(6, 12, kernel_size=3, stride=2, padding=1),
-                                        nn.ReLU(),
-                                        nn.MaxPool2d(kernel_size=3, stride=2),
-                                        )
+
+        if layer_num == 2:
+            self.cnn_layer = nn.Sequential(
+                                            nn.Conv2d(3, 6, kernel_size=3, stride=2, padding=1), # [b, 3, 32, 32] -> [b, 6, 16, 16]
+                                            nn.ReLU(), # activation
+                                            nn.MaxPool2d(kernel_size=3, stride=2), # [b, 6, 16, 16] -> [b, 6, 7, 7]
+                                            nn.Conv2d(6, 12, kernel_size=3, stride=2, padding=1), # [b, 6, 7, 7] -> [b, 12, 4, 4]
+                                            nn.ReLU(), # activation
+                                            nn.MaxPool2d(kernel_size=3, stride=2), # [b, 12, 4, 4] -> [b, 12, 1, 1]
+                                            )
+        else: # layer_num == 3
+            self.cnn_layer = nn.Sequential(
+                                            nn.Conv2d(3, 6, kernel_size=3, stride=1, padding=1), # [b, 3, 32, 32] -> [b, 6, 32, 32]
+                                            nn.ReLU(), # activation
+                                            nn.Conv2d(6, 9, kernel_size=3, stride=2, padding=1), # [b, 6, 32, 32] -> [b, 9, 16, 16]
+                                            nn.ReLU(), # activation
+                                            nn.MaxPool2d(kernel_size=3, stride=2), # [b, 9, 16, 16] -> [b, 9, 7, 7]
+                                            nn.Conv2d(9, 12, kernel_size=3, stride=2, padding=1), # [b, 9, 7, 7] -> [b, 12, 4, 4]
+                                            nn.ReLU(), # activation
+                                            nn.MaxPool2d(kernel_size=3, stride=2), # [b, 12, 4, 4] -> [b, 12, 1, 1]
+                                            )
+
     def forward(self, x):
         x = self.cnn_layer(x)
         x = x.view(-1, 12 * 1 * 1)
@@ -59,7 +73,7 @@ class CNN_FM(torch.nn.Module):
         self.field_dims = data['field_dims']
         n_field = data['field_dims'].shape[0]
         self.embedding = FeaturesEmbedding(self.field_dims, args.cnn_embed_dim)
-        self.cnn = CNN_Base()
+        self.cnn = CNN_Base(args.cnn_layer_num)
         self.fm = FactorizationMachine(
                                         input_dim=(args.cnn_embed_dim *n_field) + (12 * 1 * 1),
                                         latent_dim=args.cnn_latent_dim,
