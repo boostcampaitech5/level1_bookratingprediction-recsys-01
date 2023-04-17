@@ -1,0 +1,12 @@
+{
+    "learning_rate": [0.01],
+    "depth": [4],
+    "l2_leaf_reg": [3],
+    "iterations": [1000],
+    "early_stopping_rounds": [10],
+    "bagging_temperature": [0.5],
+    "border_count": [32],
+    "thread_count": [4],
+    "loss_function": ["RMSE"],
+    "verbose": [100]
+}

@@ -1,0 +1,27 @@
+################### cat_boost with gridcv #############
+{
+    "learning_rate": [0.01],
+    "depth": [4],
+    "l2_leaf_reg": [3],
+    "iterations": [1000],
+    "early_stopping_rounds": [10],
+    "bagging_temperature": [0.5],
+    "border_count": [32],
+    "thread_count": [4],
+    "loss_function": ["RMSE"],
+    "verbose": [100]
+}
+
+################### cat_boost with optuna #############
+
+{
+    "iterations": vatrial.suggest_int("iterations", 500, 4000),
+    "learning_rate": trial.suggest_float('learning_rate',0.001, 0.1),
+    "reg_lambda": trial.suggest_float('reg_lambda',1e-5,100),
+    "subsample": trial.suggest_float('subsample',0,1),
+    "random_strength": trial.suggest_float('random_strength',10,50),
+    "depth": trial.suggest_int('depth',1, 15),
+    "min_data_in_leaf": trial.suggest_int('min_data_in_leaf',1,30),
+    "leaf_estimation_iterations": trial.suggest_int('leaf_estimation_iterations',1,15),
+    "bagging_temperature": trial.suggest_float('bagging_temperature', 0.01, 100.00)
+}

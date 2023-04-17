@@ -138,7 +138,7 @@ def catboost_Data(args):
     elif args.process_cat == 'high': # 상위 카테고리
         print("+++++++++++++++++++ processing cat : HIGH +++++++++++++++++")
         train_df = ratings1.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author','year_of_publication']], on='isbn', how='left')
-        test_df = ratings2.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author', 'year_of_publication']], on='isbn', how='left')
+        test_df = ratings2.merge(users, on='user_id', how='left').merge(books[['isbn', 'category_high', 'publisher', 'language', 'book_author','year_of_publication']], on='isbn', how='left')
         train_df['category_high'] = train_df['category_high'].fillna("na")
         test_df['category_high'] = test_df['category_high'].fillna("na")
 
