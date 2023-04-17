@@ -210,7 +210,7 @@ if __name__ == "__main__":
     ############### CNN_FM
     arg('--cnn_embed_dim', type=int, default=64, help='CNN_FM에서 user와 item에 대한 embedding시킬 차원을 조정할 수 있습니다.')
     arg('--cnn_latent_dim', type=int, default=12, help='CNN_FM에서 user/item/image에 대한 latent 차원을 조정할 수 있습니다.')
-    arg('—-cnn_layer_num', type=int, default=2, choices=[2, 3], help='CNN_FM에서 CNN의 Convlution layer의 수를 지정할 수 있습니다.')
+    arg('--cnn_layer_num', type=int, default=2, choices=[2, 3], help='CNN_FM에서 CNN의 Convlution layer의 수를 지정할 수 있습니다.')
     arg('--cnn_feed_context', type=bool, default=False, help='CNN_FM의 입력으로 context data를 줍니다.')
 
 
