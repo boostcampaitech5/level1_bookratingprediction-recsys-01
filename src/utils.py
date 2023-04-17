@@ -15,7 +15,7 @@ from .models import *
 
 
 def get_sampler(args, y):
-    if args.sampler == None:
+    if (args.sampler == None) or (args.sampler == 'None'):
         sampler = None
     elif args.sampler == 'weighted': 
         labels = list(y)
