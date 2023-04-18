@@ -37,7 +37,7 @@ def rmse(real: list, predict: list) -> float:
 
 def CB_optuna(trial:Trial):
     params = {
-        'iterations':trial.suggest_int("iterations", 10, 15),
+        'iterations':trial.suggest_int("iterations", 50, 2000),
         'learning_rate' : trial.suggest_float('learning_rate',0.001, 0.1),
         'reg_lambda': trial.suggest_float('reg_lambda',1e-5,100),
         'subsample': trial.suggest_float('subsample',0,1),
@@ -51,8 +51,8 @@ def CB_optuna(trial:Trial):
     ######################## Load Dataset
     train, test = catboost_Data(args)
 
-    X_train, y_train = train.drop(['user_id', 'isbn', 'rating','book_author'], axis=1), train['rating']
-    X_test, y_test = test.drop(['user_id', 'isbn', 'rating','book_author'], axis=1), test['rating']
+    X_train, y_train = train.drop(['rating','book_author'], axis=1), train['rating']
+    X_test, y_test = test.drop(['rating','book_author'], axis=1), test['rating']
     
     cat_list = [x for x in X_train.columns.tolist()]
         
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     train, test = catboost_Data(args)
 
     X_train, y_train = train, train['rating']
-    X_test, y_test = test.drop(['user_id', 'isbn', 'rating','book_author'], axis=1), test['rating']
+    X_test, y_test = test.drop(['rating','book_author'], axis=1), test['rating']
 
     tr_X, val_X, tr_y, val_y = train_test_split(X_train,
                                                 y_train,
@@ -164,12 +164,12 @@ if __name__ == "__main__":
                                                 shuffle=True
                                                 )
     
-    tr_X = tr_X.drop(['user_id', 'isbn', 'rating','book_author'], axis = 1)
-    val_result = val_X[['user_id', 'isbn', 'rating']]
-    val_X = val_X.drop(['user_id', 'isbn', 'rating','book_author'], axis = 1)
+    tr_X = tr_X.drop([ 'rating','book_author'], axis = 1)
+    val_result = val_X[[ 'rating']]
+    val_X = val_X.drop([ 'rating','book_author'], axis = 1)
     cat_list = [x for x in tr_X.columns.tolist()]
     
-    X_train = train.drop(['user_id', 'isbn', 'rating','book_author'], axis = 1)
+    X_train = train.drop([ 'rating','book_author'], axis = 1)
 
     f = "best_{}".format
     for param_name, param_value in optuna_cbrm.best_trial.params.items():
