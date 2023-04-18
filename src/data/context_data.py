@@ -6,19 +6,6 @@ import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader, Dataset
 from src.utils import get_sampler
 
-### fill NaN of Age using location mean
-def fill_age_na_with_loc_mean(user_):
-    u_age, u_city, u_state, u_country = user_.iloc[1:5]
-    
-    if np.isnan(u_age):
-        if u_state != "n/a":
-            u_age = state_age_info[u_state] 
-        elif u_country != "n/a":
-            u_age = country_age_info[u_country] 
-
-    user_["age"] = u_age    
-    return user_ 
-
 ### modi from origin for zero mapping
 def age_map(x) -> int:
     # x = int(x)
@@ -51,7 +38,6 @@ def age_map_cat(x) -> int:
         return 5
     else:
         return 6
-    
     
 def year_map_cat(x) -> int:
     x = int(x)
@@ -163,9 +149,11 @@ def catboost_Data(args):
         train_df['age'] = train_df['age'].apply(age_map)
         test_df['age'] = test_df['age'].apply(age_map)
       
-    #language 결측 'na'로 처리.
+    #결측 'na'로 처리.
     train_df['language'] = train_df['language'].fillna("na") 
     test_df['language'] = test_df['language'].fillna("na")
+    train_df['book_author'] = train_df['book_author'].fillna("na") 
+    test_df['book_author'] = test_df['book_author'].fillna("na")
         
  
     return train_df, test_df
@@ -246,20 +234,6 @@ def process_context_data(users, books, ratings1, ratings2, process_cat, process_
         test_df['age']  = test_df['age'].fillna(int(test_df['age'].mean()))
     elif process_age == 'zero_cat': # fill NaN with zero_cat
         print("+++++++++++++++++++ processing Age : zero_cat +++++++++++++++++")
-    elif process_age == 'loc_mean': # fill NaN with location_mean
-        print("+++++++++++++++++++ processing Age : loc_mean +++++++++++++++++")
-        state_age_info = dict()        
-        for state in users['location_state'].unique():
-            state_age_info[state] = users[users["location_state"] == state].age.mean()
-            
-        country_age_info = dict()
-        for country in users['location_country'].unique():
-            country_age_info[country] = users[users["location_country"] == country].age.mean()
-        
-        train_df = train_df.apply(fill_age_na_with_loc_mean, axis=1)
-        train_df['age'] = train_df['age'].fillna(int(train_df['age'].mean()))
-        test_df = test_df.apply(fill_age_na_with_loc_mean, axis=1)
-        test_df['age'] = test_df['age'].fillna(int(test_df['age'].mean()))
     elif process_age == 'rand_norm': # fill NaN with random numb from normal Dist
         print("+++++++++++++++++++ processing Age : rand_norm +++++++++++++++++")
         age_mean =  np.mean(train_df['age']) 
