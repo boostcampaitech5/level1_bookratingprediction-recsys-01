@@ -36,12 +36,8 @@ def main(args):
 
     ######################## DATA LOAD
     print(f'--------------- {args.model} Load Data ---------------')
-    if args.model in ('catboost'):
+    if args.model in ('catboost', 'lgbm'):
         data = catboost_Data(args) # data = [train_data, test_data]
-        
-        '''elif args.model in ('naiveB'):
-            print('haha')'''
-
     else:
         pass
 
@@ -101,7 +97,7 @@ if __name__ == "__main__":
     arg('--data_path', type=str, default='../data/', help='Data path를 설정할 수 있습니다.')
     arg('--saved_model_path', type=str, default='./saved_models', help='Saved Model path를 설정할 수 있습니다.')
     arg('--seed', type=int, default=42, help='seed 값을 조정할 수 있습니다.')
-    arg('--model', type=str, choices=['catboost', 'model2'], help='학습 및 예측할 모델을 선택할 수 있습니다.')
+    arg('--model', type=str, choices=['catboost', 'lgbm'], help='학습 및 예측할 모델을 선택할 수 있습니다.')
     arg('--device', type=str, default='GPU', choices=['GPU', 'CPU'], help='학습에 사용할 Device를 조정할 수 있습니다.')
     arg('--data_shuffle', type=bool, default=True, help='데이터 셔플 여부를 조정할 수 있습니다.')
     arg('--test_size', type=float, default=0.2, help='Train/Valid split 비율을 조정할 수 있습니다.')

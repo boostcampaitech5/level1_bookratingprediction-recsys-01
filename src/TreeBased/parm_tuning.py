@@ -10,6 +10,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearchCV
 from src.data import catboost_Data
 from catboost import CatBoostRegressor, Pool
+from lightgbm import LGBMRegressor
 
 import warnings
 
@@ -41,19 +42,25 @@ def rmse(real: list, predict: list) -> float:
 def grid_search(data, log_path, args):
     ######################## setting data
     X_train_data, y_train_data, X_test_data, y_test_data = prepare_data(data)
+    cat_list = [x for x in X_train_data.columns.tolist()]
+    print(cat_list)
+
+    
+    if args.model == 'lgbm':
+        X_test_data = X_test_data.astype('category')
+        X_train_data[cat_list] = X_train_data[cat_list].astype('category')
     
     ######################## Model select
     if args.model in ('catboost'):
-        cat_list = [x for x in X_train_data.columns.tolist()]
         model = CatBoostRegressor(cat_features=cat_list, 
                                 train_dir = log_path+'catboost_info',
                                 task_type = args.device,
                                 random_seed= args.seed,
-                                bootstrap_type='Poisson'
+                                # bootstrap_type='Poisson'
                                  )
         
-    #elif args.model in ('lgbm'):
-    #    print('')
+    elif args.model in ('lgbm'):
+        model = LGBMRegressor(cat_feature = cat_list)
     else:
         pass
     
@@ -74,7 +81,7 @@ def grid_search(data, log_path, args):
     
     saving_param = grid.best_params_
     f = "best_{}".format
-    for s_parm in saving_param:
+    for s_parm in saving_param.items():
         wandb.run.summary[f(s_parm[0])] = s_parm[1]
         
     # saving best parameter
