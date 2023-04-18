@@ -13,7 +13,7 @@ from src.data import image_data_load, image_data_split, image_data_loader
 from src.data import text_data_load, text_data_split, text_data_loader
 from src.data import image_context_data_load, image_context_data_split, image_context_data_loader
 from src.data import image_text_data_load, image_text_data_split, image_text_data_loader
-from src.train import train, test, infer, cv_train
+from src.train import train, test, infer, cv_train, oof_test
 
 def main(args):
     Setting.seed_everything(args.seed)
@@ -116,7 +116,7 @@ def main(args):
 
     ######################## INFERENCE
     print(f'--------------- {args.model} PREDICT ---------------')
-    if args.oof == True:
+    if args.oof:
         predicts = oof_test(args, model, data, setting)
     else:
         predicts = test(args, model, data, setting)
@@ -136,12 +136,14 @@ def main(args):
     
 
     ######################## INFERENCE & SAVE VALID
-    print(f'--------------- INFERENCE & SAVE {args.model} VALID ---------------')
-    result = infer(args, model, data, setting)
-    valid_filename = filename.replace('.csv', '_valid.csv')
-    result.to_csv(valid_filename, index=False)
-    wandb.save(valid_filename)
-
+    if not args.oof:
+        print(f'--------------- INFERENCE & SAVE {args.model} VALID ---------------')
+        result = infer(args, model, data, setting)
+        valid_filename = filename.replace('.csv', '_valid.csv')
+        result.to_csv(valid_filename, index=False)
+        wandb.save(valid_filename)
+    else:
+        pass
 
     ######################## WANDB & Logger FINISH
     logger.close()
