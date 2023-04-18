@@ -1,5 +1,4 @@
 import os
-import tqdm
 import wandb
 import pandas as pd
 import torch
@@ -12,7 +11,7 @@ from src.utils import get_sampler
 
 def train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=True, fold=""):
     minimum_loss = 999999999
-    for epoch in tqdm.tqdm(range(args.epochs)):
+    for epoch in range(args.epochs):
         #for early stopping
         best_loss = 10 ** 2 # loss 초기값
         patient_limit = args.patient_limit # 3번의 epoch까지 허용
@@ -66,14 +65,14 @@ def cv_train(args, model, dataloader, loss_fn, optimizer, logger, setting):
     kf = KFold(n_splits= 5, shuffle=True, random_state=args.seed)
 
     cv_score = 0
-    for fold, (train_idx, valid_idx) in tqdm.tqdm(enumerate(kf.split(dataset)), position=0):
+    for fold, (train_idx, valid_idx) in enumerate(kf.split(dataset)):
         train_dataset = Subset(dataset, train_idx)
         valid_dataset = Subset(dataset, valid_idx)
         y_train = dataloader['train']['rating'][train_idx]
 
         dataloader['train_dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, sampler=get_sampler(args, train_dataset, y_train.values))
         dataloader['valid_dataloader'] = DataLoader(valid_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
-        model, minimum_loss = train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=True, fold=str(fold))
+        model, minimum_loss = train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=False, fold=str(fold))
         cv_score += minimum_loss/5
     return model, cv_score
 
