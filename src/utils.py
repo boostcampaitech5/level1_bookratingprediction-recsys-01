@@ -10,15 +10,15 @@ import pandas as pd
 from datetime import datetime, timedelta
 from torch.nn import MSELoss, HuberLoss
 from torch.optim import SGD, Adam
-from torch.utils.data.sampler import WeightedRandomSampler
+from torch.utils.data.sampler import RandomSampler, WeightedRandomSampler
 from .models import *
 
 
-def get_sampler(args, y):
-    if (args.sampler == None) or (args.sampler == 'None'):
-        sampler = None
+def get_sampler(args, dataset, y_train):
+    if args.sampler == None or args.sampler == 'None':
+        sampler = RandomSampler(dataset)
     elif args.sampler == 'weighted': 
-        labels = list(y)
+        labels = list(y_train)
         class_count = np.unique(labels, return_counts=True)[1]
         weights = 1.0 / torch.tensor([class_count[label-1] for label in labels], dtype=torch.float)
         sampler = WeightedRandomSampler(weights=weights, num_samples=len(labels), replacement=True)

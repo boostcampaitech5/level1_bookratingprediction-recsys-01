@@ -5,34 +5,10 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import numpy as np
-from torch.utils.data import SubsetRandomSampler, DataLoader
+from torch.utils.data import Subset, DataLoader
 from sklearn.model_selection import KFold
+from src.utils import get_sampler
 
-
-def cv_train(args, model, dataloader, loss_fn, optimizer, logger, setting):
-    origin_train_dataloader = dataloader['train_dataloader']
-    origin_valid_dataloader = dataloader['valid_dataloader']
-    
-    dataset = origin_train_dataloader.dataset
-    ## TODO:: StratifiedKFold
-    cv = KFold(n_splits= 5, shuffle=True, random_state=args.seed)
-    
-    for fold, (tra_idx, val_idx) in tqdm.tqdm(enumerate(cv.split(dataset)), position=0):
-        train_sampler = SubsetRandomSampler(tra_idx)
-        valid_sampler = SubsetRandomSampler(val_idx)
-        dataloader['train_dataloader'] = DataLoader(dataset, batch_size=args.batch_size, sampler=train_sampler)
-        dataloader['valid_dataloader'] = DataLoader(dataset, batch_size=args.batch_size, sampler=valid_sampler)
-        train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=False, fold=str(fold))
-        
-        # validation
-        dataloader['valid_dataloader'] = origin_valid_dataloader
-        valid_loss = valid(args, model, dataloader, loss_fn)
-        print(f'Fold: {fold+1}, valid_loss: {valid_loss:.3f}')
-        logger.log(fold=fold+1, valid_loss=valid_loss)
-        wandb.log({'fold': fold, 'val_loss': valid_loss})
-        
-    return model
-    
 
 def train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=True, fold=""):
     minimum_loss = 999999999
@@ -83,8 +59,23 @@ def train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log
             best_loss = valid_loss
             patient_check = 0     
     
-    return model
+    return model, minimum_loss
 
+def cv_train(args, model, dataloader, loss_fn, optimizer, logger, setting):
+    dataset = dataloader['whole_dataset']
+    kf = KFold(n_splits= 5, shuffle=True, random_state=args.seed)
+
+    cv_score = 0
+    for fold, (train_idx, valid_idx) in tqdm.tqdm(enumerate(kf.split(dataset)), position=0):
+        train_dataset = Subset(dataset, train_idx)
+        valid_dataset = Subset(dataset, valid_idx)
+        y_train = dataloader['train']['rating'][train_idx]
+
+        dataloader['train_dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, sampler=get_sampler(args, train_dataset, y_train.values))
+        dataloader['valid_dataloader'] = DataLoader(valid_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
+        model, minimum_loss = train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=True, fold=str(fold))
+        cv_score += minimum_loss/5
+    return model, cv_score
 
 def valid(args, model, dataloader, loss_fn):
     model.eval()
