@@ -176,6 +176,8 @@ if __name__ == "__main__":
         wandb.run.summary[f(param_name)] = param_value
         wandb.run.summary["best val_RMSE"] = optuna_cbrm.best_trial.value
     
+    wandb.run.tags = [args.model]
+    
     wandb.log({"param_importance_chart" : plot_param_importances(optuna_cbrm) ,
                "param_optimization_history" : plot_optimization_history(optuna_cbrm)})
 
@@ -189,10 +191,10 @@ if __name__ == "__main__":
     
     best_params = optuna_cbrm.best_trial.params
     best_model = CatBoostRegressor(**best_params,
-                                   #task_type = "GPU",
+                                   task_type = "GPU",
                                    cat_features = cat_list,
                                    random_seed= args.seed,
-                                   #bootstrap_type='Poisson',
+                                   bootstrap_type='Poisson',
                                    verbose = 100)
     
     ################### predict valid set
@@ -220,4 +222,4 @@ if __name__ == "__main__":
     wandb.save(filename)
 
     val_result.to_csv(filename.replace('.csv', '_valid.csv'), index=False)
-    wandb.save(filename)
+    wandb.save(filename.replace('.csv', '_valid.csv'))
