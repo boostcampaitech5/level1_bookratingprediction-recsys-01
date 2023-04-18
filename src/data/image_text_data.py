@@ -133,6 +133,13 @@ def image_text_data_loader(args, data):
         image_text_data_split로 부터 학습/평가/실험 데이터가 담긴 사전 형식의 데이터를 입력합니다.
     ----------
     """
+    whole_dataset = Image_Text_Dataset(
+                                data['train'][['user_id', 'isbn']].values,
+                                data['train']['user_summary_merge_vector'].values,
+                                data['train']['item_summary_vector'].values,
+                                data['train']['img_vector'].values,
+                                data['train']['rating'].values
+                                )
     train_dataset = Image_Text_Dataset(
                                 data['X_train'][['user_id', 'isbn']].values,
                                 data['X_train']['user_summary_merge_vector'].values,
@@ -155,8 +162,8 @@ def image_text_data_loader(args, data):
                                 data['test']['rating'].values
                                 )
 
-    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, sampler=get_sampler(args, data['y_train'].values))
+    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, sampler=get_sampler(args, train_dataset, data['y_train'].values))
     valid_dataloader = DataLoader(valid_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
-    data['train_dataloader'], data['valid_dataloader'], data['test_dataloader'] = train_dataloader, valid_dataloader, test_dataloader
+    data['whole_dataset'], data['train_dataloader'], data['valid_dataloader'], data['test_dataloader'] = whole_dataset, train_dataloader, valid_dataloader, test_dataloader
     return data
