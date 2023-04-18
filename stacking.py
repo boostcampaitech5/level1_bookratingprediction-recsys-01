@@ -15,11 +15,22 @@ def main(args):
     
     stacking = Stacking(filenames = file_list,filepath=args.result_path,seed=args.seed,test_size=args.test_size)
     
-    stacking.train()
+    ################# Train
+    if args.cross_validation:
+        stacking.cv_train(stacking.X_train, stacking.y_train)
+    else:
+        stacking.train(stacking.X_train, stacking.y_train)
+    
+    
+    ################# TEST
+    print('----- total test -----')
+    stacking.test(stacking.X_test, stacking.y_test)
+    
+    
+    ################# SAVE
     weights = stacking.get_weights()
     result = stacking.infer()
     
-    ## save
     output = stacking.output_frame.copy()
     output['rating'] = result
     
@@ -67,5 +78,7 @@ if __name__ == "__main__":
         help='required: 앙상블할 submit 파일명을 쉼표(,)로 구분하여 모두 입력해 주세요. 이 때, .csv와 같은 확장자는 입력하지 않습니다.')
     arg('-p', '--result_path',type=str, default='./submit/',
         help='optional: 앙상블할 파일이 존재하는 경로를 전달합니다. (default:"./submit/")')
+    arg('--sampler', type=str, default=None, choices=[None, 'None', 'weighted'], help='dataloader의 sampler를 변경할 수 있습니다.')
+    arg('-cv', '--cross_validation', type=bool, default=False, help='cross validation을 사용할 수 있습니다.')
     args = parser.parse_args()
     main(args)
