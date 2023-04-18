@@ -22,9 +22,9 @@ def main(args):
         stacking.train(stacking.X_train, stacking.y_train)
     
     
-    ################# TEST
-    print('----- total test -----')
-    stacking.test(stacking.X_test, stacking.y_test)
+    ################# Valid
+    print('----- total valid -----')
+    stacking.valid(stacking.X_test, stacking.y_test)
     
     
     ################# SAVE

@@ -61,30 +61,31 @@ class Stacking:
     def cv_train(self, X, y):
         skf = StratifiedKFold(n_splits=5)
 
-        for fold, (train_index, test_index) in enumerate(skf.split(X=X, y=y)):
+        for fold, (train_index, valid_index) in enumerate(skf.split(X=X, y=y)):
             print(f"----- Fold {fold} -----")
             
             fold_X_train = X[train_index]
             fold_y_train = y[train_index]
             
-            fold_X_test = X[test_index]
-            fold_y_test = y[test_index]
+            fold_X_valid = X[valid_index]
+            fold_y_valid = y[valid_index]
             
             self.train(fold_X_train, fold_y_train)
-            self.test(fold_X_test, fold_y_test)
+            self.valid(fold_X_valid, fold_y_valid)
     
 
     def train(self, X, y):
         self.lr_final.fit(X, y)
         print(f'Weight: {self.lr_final.coef_}')
         print(f'Bais: {self.lr_final.intercept_}')
+        return 
         
         
-    def test(self, X, y):
+    def valid(self, X, y):
         pred = self.lr_final.predict(X)
         loss = rmse(pred, y)
         
-        print(f'Train RMSE: {loss}')
+        print(f'RMSE: {loss}')
         
         
     def get_weights(self):
