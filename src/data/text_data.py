@@ -299,6 +299,12 @@ def text_data_loader(args, data):
         text_data_split로 부터 학습/평가/실험 데이터가 담긴 사전 형식의 데이터를 입력합니다.
     ----------
     """
+    whole_dataset = Text_Dataset(
+                                data['text_train'][['user_id', 'isbn']].values,
+                                data['text_train']['user_summary_merge_vector'].values,
+                                data['text_train']['item_summary_vector'].values,
+                                data['text_train']['rating'].values
+                                )
     train_dataset = Text_Dataset(
                                 data['X_train'][['user_id', 'isbn']].values,
                                 data['X_train']['user_summary_merge_vector'].values,
@@ -319,8 +325,8 @@ def text_data_loader(args, data):
                                 )
 
 
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, sampler=get_sampler(args, data['y_train'].values))
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, sampler=get_sampler(args, train_dataset, data['y_train'].values))
     valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
-    data['train_dataloader'], data['valid_dataloader'], data['test_dataloader'] = train_dataloader, valid_dataloader, test_dataloader
+    data['whole_dataset'], data['train_dataloader'], data['valid_dataloader'], data['test_dataloader'] = whole_dataset, train_dataloader, valid_dataloader, test_dataloader
     return data
