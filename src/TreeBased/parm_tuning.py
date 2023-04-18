@@ -56,7 +56,7 @@ def grid_search(data, log_path, args):
                                 train_dir = log_path+'catboost_info',
                                 task_type = args.device,
                                 random_seed= args.seed,
-                                # bootstrap_type='Poisson'
+                                bootstrap_type='Poisson'
                                  )
         
     elif args.model in ('lgbm'):

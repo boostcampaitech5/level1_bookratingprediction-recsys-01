@@ -13,9 +13,7 @@ from optuna import Trial
 from optuna.samplers import TPESampler
 from optuna.integration.wandb import WeightsAndBiasesCallback
 from optuna.visualization import plot_param_importances, plot_optimization_history
-from sklearn.naive_bayes import BernoulliNB
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from src.utils import Logger, Setting, models_load, get_timestamp
 from catboost import CatBoostRegressor, Pool
 from lightgbm import LGBMRegressor 
@@ -41,12 +39,12 @@ def rmse(real: list, predict: list) -> float:
 def CB_optuna(trial:Trial):
     if args.model == 'catboost':
         params = {
-            'iterations':trial.suggest_int("iterations", 50, 2000),
+            'iterations':trial.suggest_int("iterations", 10, 20),
             'learning_rate' : trial.suggest_float('learning_rate',1e-8, 0.1),
             'reg_lambda': trial.suggest_float('reg_lambda',1e-5,100),
             'subsample': trial.suggest_float('subsample',0,1),
             'random_strength': trial.suggest_float('random_strength',10,50),
-            'depth': trial.suggest_int('depth',1, 15),
+            'depth': trial.suggest_int('depth',1, 6),
             'min_data_in_leaf': trial.suggest_int('min_data_in_leaf',1,30),
             'leaf_estimation_iterations': trial.suggest_int('leaf_estimation_iterations',1,15),
             'bagging_temperature' :trial.suggest_float('bagging_temperature', 0.01, 100.00)
@@ -57,18 +55,23 @@ def CB_optuna(trial:Trial):
             'objective': 'regression',
             'verbosity': -1,
             'metric': 'rmse', 
+            'num_iterations' :trial.suggest_int('num_iterations', 100, 200),
+            'num_leaves' : trial.suggest_int('num_leaves', 3, 9),
             'max_depth': trial.suggest_int('max_depth',3, 15),
             'learning_rate' : trial.suggest_float('learning_rate',1e-8, 0.1),
-            'n_estimators': trial.suggest_int('n_estimators', 100, 3000),
+            'n_estimators': trial.suggest_int('n_estimators', 10, 50),
             'min_child_samples': trial.suggest_int('min_child_samples', 5, 100),
-            'subsample': trial.suggest_float('subsample', 0.4, 1)
+            'subsample': trial.suggest_float('subsample', 0.4, 1),
+            #'colsample_bytree' : trial.suggest_float('colsample_bytree', 0.0, 1.0),
+            #'reg_alpha' : trial.suggest_float('reg_alpha',  0.0, 1.0),
+            #'reg_lambda' : trial.suggest_float('reg_lambda',  0.0, 1.0)
             }
 
     ######################## Load Dataset
     train, test = catboost_Data(args)
 
-    X_train, y_train = train.drop(['rating','book_author'], axis=1), train['rating']
-    X_test, y_test = test.drop(['rating','book_author'], axis=1), test['rating']
+    X_train, y_train = train.drop(['rating', 'book_author'], axis=1), train['rating']
+    X_test, y_test = test.drop(['rating'], axis=1), test['rating']
     
     cat_list = [x for x in X_train.columns.tolist()]
 
@@ -76,10 +79,6 @@ def CB_optuna(trial:Trial):
         X_test = X_test.astype('category')
         X_train[cat_list] = X_train[cat_list].astype('category')
 
-    '''if args.model == 'lgbm':
-        train_lgbm = lightgbm.Dataset(X_train, label=y_train, categorical_feature=cat_list)'''
-
-    
 
     tr_X, val_X, tr_y, val_y = train_test_split(X_train,
                                                     y_train,
@@ -170,7 +169,7 @@ if __name__ == "__main__":
     train, test = catboost_Data(args)
 
 
-    X_train, y_train = train, train['rating']
+    X_train, y_train = train.drop(['book_author'], axis = 1), train['rating']
     X_test, y_test = test.drop(['rating','book_author'], axis=1), test['rating']
 
 
@@ -181,12 +180,11 @@ if __name__ == "__main__":
                                                 shuffle=True)
     
     tr_X = tr_X.drop(['rating'], axis = 1)
-    val_result = val_X[['user_id','rating']]
-    val_X = val_X.drop([ 'rating'], axis = 1)
-    cat_list = [x for x in tr_X.columns.tolist()]
+    val_result = val_X[['user_id','isbn','rating']]
+    val_X = val_X.drop(['rating'], axis = 1)
     
     X_train = train.drop(['book_author','rating'], axis = 1)
-
+    cat_list = X_train.columns.tolist()
 
     f = "best_{}".format
     for param_name, param_value in optuna_cbrm.best_trial.params.items():
@@ -207,6 +205,8 @@ if __name__ == "__main__":
     ####################### Train& predict using best params
     
     best_params = optuna_cbrm.best_trial.params
+    cv = StratifiedKFold(n_splits=5)
+
     if args.model == "catboost":
         best_model = CatBoostRegressor(**best_params,
                                        task_type = "GPU",
@@ -215,11 +215,25 @@ if __name__ == "__main__":
                                        bootstrap_type='Poisson',
                                        verbose = 100)
         # valid prediction
-        best_model.fit(X_train, y_train)
+        best_model.fit(tr_X, tr_y)
         val_result['pred'] = best_model.predict(val_X)
 
         best_model.fit(X_train, y_train)
         predicts = best_model.predict(X_test)
+
+        ## OOF Prediction
+        oof_result = []
+        for tr, val in cv.split(X_train, y_train):
+            tr_x , tr_y = X_train.iloc[tr], y_train.iloc[tr]
+            
+            best_model.fit(tr_x, tr_y)
+            pred_oof = best_model.predict(X_test).tolist()
+            oof_result.append(pred_oof)
+
+        oof_pred = list(np.sum(oof_result, axis= 0) / 5)
+
+
+
 
 
     elif args.model == 'lgbm':
@@ -237,7 +251,16 @@ if __name__ == "__main__":
         best_model.fit(X_train, y_train)
         predicts = best_model.predict(X_test)
 
-    
+        ## OOF prediction
+        oof_result = []
+        for tr, val in cv.split(X_train, y_train):
+            tr_x , tr_y = X_train.iloc[tr], y_train.iloc[tr]
+            
+            best_model.fit(tr_x, tr_y)
+            pred_oof = best_model.predict(X_test).tolist()
+            oof_result.append(pred_oof)
+
+        oof_pred = list(np.sum(oof_result, axis= 0) / 5)
     
 
     os.makedirs(args.saved_model_path, exist_ok=True)
@@ -252,13 +275,33 @@ if __name__ == "__main__":
     wandb.save(log_path+f'{args.model}_params.json')
     
     ######################## SAVE PREDICT
-    print(f'--------------- PREDICTING {args.model} ---------------')
+    print(f'--------------- PREDICTING SUBMISSIONS  ---------------')
     submission = pd.read_csv(args.data_path + 'sample_submission.csv')
     submission['rating'] = predicts
-    
-    print(f'--------------- SAVE {filename} ---------------')
-    submission.to_csv(filename, index=False)
-    wandb.save(filename)
 
+    '''submission.to_csv(filename, index=False)
+    wandb.save(filename)'''
+
+    oof_submission = pd.read_csv(args.data_path + 'sample_submission.csv')
+    oof_submission['rating'] = oof_pred
+    
+    print(f'--------------- SAVEING RESULTS ---------------')
+    
     val_result.to_csv(filename.replace('.csv', '_valid.csv'), index=False)
     wandb.save(filename.replace('.csv', '_valid.csv'))
+
+    oof_submission.to_csv(filename.replace('.csv', '_oof.csv'), index=False)
+    wandb.save(filename.replace('.csv', '_oof.csv'))
+
+
+    filename = setting.get_submit_filename(args)
+    oof_name = filename.replace('.csv', '_oof.csv')
+    val_name = filename.replace('.csv', '_valid.csv')
+
+    submission.to_csv(filename, index=False)
+    oof_submission.to_csv(oof_name, index=False)
+    val_result.to_csv(val_name, index=False)
+
+    wandb.save(filename)
+    wandb.save(oof_name)
+    wandb.save(val_name)
