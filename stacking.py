@@ -37,7 +37,7 @@ if __name__ == "__main__":
     '''
     [실행 방법]
     ```
-    python ensemble.py [인자]
+    python stacking.py [인자]
     ```
     
     [인자 설명]
@@ -57,13 +57,7 @@ if __name__ == "__main__":
 
     [결과물]
     result_path 안에 앙상블된 최종 결과물이 저장됩니다.
-    {strategy_title}-{files_title}.csv
-
-    파일명은 ensemble_files과 ensemble_strategy가 모두 명시되어 있습니다.
-    ensemble_strategy의 경우, 아래와 같이 작성됩니다.
-    > simple weighted : sw + 각 파일에 적용된 가중치
-    > average weighted : aw
-    > mixed : mixed
+    stacked-sw-{weight_info}-{files_title}.csv
     '''
 
     arg('--seed', type=int, default=42, help='seed 값을 조정할 수 있습니다.')
