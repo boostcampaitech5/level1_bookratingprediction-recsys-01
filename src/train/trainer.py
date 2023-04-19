@@ -9,7 +9,12 @@ from sklearn.model_selection import KFold
 from src.utils import get_sampler
 
 
-def train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=True, fold=""):
+def train(args, dataloader, logger, setting, need_log=True, fold=""):
+    # init model, loss_fn, optimizer
+    model = models_load(args, data)
+    loss_fn = loss_fn_load(args)
+    optimizer = optimizer_load(args, model)
+
     minimum_loss = 999999999
     for epoch in range(args.epochs):
         #for early stopping
@@ -60,10 +65,11 @@ def train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log
     
     return model, minimum_loss
 
-def cv_train(args, model, dataloader, loss_fn, optimizer, logger, setting):
+def cv_train(args, dataloader, logger, setting):
     dataset = dataloader['whole_dataset']
     kf = KFold(n_splits= 5, shuffle=True, random_state=args.seed)
 
+    model_list = []
     cv_score = 0
     for fold, (train_idx, valid_idx) in enumerate(kf.split(dataset)):
         train_dataset = Subset(dataset, train_idx)
@@ -72,9 +78,10 @@ def cv_train(args, model, dataloader, loss_fn, optimizer, logger, setting):
 
         dataloader['train_dataloader'] = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, sampler=get_sampler(args, train_dataset, y_train.values))
         dataloader['valid_dataloader'] = DataLoader(valid_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
-        model, minimum_loss = train(args, model, dataloader, loss_fn, optimizer, logger, setting, need_log=False, fold=str(fold))
+        model, minimum_loss = train(args, dataloader, logger, setting, need_log=False, fold=str(fold))
+        model_list.append(model)
         cv_score += minimum_loss/5
-    return model, cv_score
+    return model_list, cv_score
 
 def valid(args, model, dataloader, loss_fn):
     model.eval()
@@ -117,10 +124,9 @@ def test(args, model, dataloader, setting, fold=""):
         predicts.extend(y_hat.tolist())
     return predicts
 
-def oof_test(args, model, dataloader, setting):
-    k = 5
+def oof_test(args, model_list, dataloader, setting):
     predicts_list = []
-    for fold in range(k):
+    for fold in range(len(model_list)):
         predicts_fold = np.array(test(args, model, dataloader, setting, str(fold)))
         predicts_list.append(predicts_fold)
 

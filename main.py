@@ -99,27 +99,20 @@ def main(args):
     wandb.login(key=WANDB_API_KEY)
 
 
-    ######################## Model & loss_fn & optimizer
-    print(f'--------------- INIT {args.model} ---------------')
-    model = models_load(args,data)
-    loss_fn = loss_fn_load(args)
-    optimizer = optimizer_load(args,model)
-
-
     ######################## TRAIN
     print(f'--------------- {args.model} TRAINING ---------------')
     if args.cross_validation:
-        model, cv_score = cv_train(args, model, data, loss_fn, optimizer, logger, setting)
+        model_list, cv_score = cv_train(args, data, logger, setting)
         print(f"cv_score is {cv_score:4f}")
     else:
-        model, minimum_loss = train(args, model, data, loss_fn, optimizer, logger, setting)
-        print(f"minimum_loss is {minimum_loss:4f}")
+        model, score = train(args, data, logger, setting)
+        print(f"score is {score:4f}")
 
 
     ######################## INFERENCE
     print(f'--------------- {args.model} PREDICT ---------------')
     if args.oof:
-        predicts = oof_test(args, model, data, setting)
+        predicts = oof_test(args, model_list, data, setting)
     else:
         predicts = test(args, model, data, setting)
 
