@@ -7,13 +7,7 @@ import dotenv
 import config
 from functools import partial
 from src.utils import Logger, Setting, get_timestamp
-from src.data import context_data_load, context_data_split, context_data_loader
-from src.data import dl_data_load, dl_data_split, dl_data_loader
-from src.data import image_data_load, image_data_split, image_data_loader
-from src.data import text_data_load, text_data_split, text_data_loader
-from src.data import image_context_data_load, image_context_data_split, image_context_data_loader
-from src.data import image_text_data_load, image_text_data_split, image_text_data_loader
-from src.train import train, test, infer, cv_train, oof_test
+from src.train.trainers import Trainer, CVTrainer
 
 def main(args):
     Setting.seed_everything(args.seed)
@@ -32,58 +26,6 @@ def main(args):
         args = argparse.Namespace(**dict(args_dict, **w_config))
     run.tags = [args.model]
 
-    ######################## DATA LOAD
-    print(f'--------------- {args.model} Load Data ---------------')
-    if args.model in ('FM', 'FFM', 'FFDCN'):
-        data = context_data_load(args)
-    elif args.model in ('NCF', 'WDN', 'DCN'):
-        data = dl_data_load(args)
-    elif args.model == 'CNN_FM':
-        if args.cnn_feed_context:
-            data = image_context_data_load(args)
-        else:
-            data = image_data_load(args)
-    elif args.model == 'DeepCoNN':
-        import nltk
-        nltk.download('punkt')
-        data = text_data_load(args)
-    elif args.model == 'DeepCoNN_CNN':
-        import nltk
-        nltk.download('punkt')
-        data = image_text_data_load(args)
-    
-    else:
-        pass
-
-
-    ######################## Train/Valid Split
-    print(f'--------------- {args.model} Train/Valid Split ---------------')
-    if args.model in ('FM', 'FFM', 'FFDCN'):
-        data = context_data_split(args, data)
-        data = context_data_loader(args, data)
-
-    elif args.model in ('NCF', 'WDN', 'DCN'):
-        data = dl_data_split(args, data)
-        data = dl_data_loader(args, data)
-
-    elif args.model=='CNN_FM':
-        if args.cnn_feed_context:
-            data = image_context_data_split(args, data)
-            data = image_context_data_loader(args, data)
-        else:
-            data = image_data_split(args, data)
-            data = image_data_loader(args, data)
-
-    elif args.model=='DeepCoNN':
-        data = text_data_split(args, data)
-        data = text_data_loader(args, data)
-        
-    elif args.model=='DeepCoNN_CNN':
-        data = image_text_data_split(args, data)
-        data = image_text_data_loader(args, data)
-    
-    else:
-        pass
 
     ####################### Setting for Log
     setting = Setting(args)
@@ -94,6 +36,14 @@ def main(args):
     logger = Logger(args, log_path)
     logger.save_args()
     
+
+    ######################## INIT Trainer
+    if args.cross_validation:
+        trainer = CVTrainer(args, logger, setting)
+    else:
+        trainer = Trainer(args, logger, setting)
+    
+    
     ####################### WANDB
     WANDB_API_KEY = os.environ.get('WANDB_API_KEY')
     wandb.login(key=WANDB_API_KEY)
@@ -101,21 +51,15 @@ def main(args):
 
     ######################## TRAIN
     print(f'--------------- {args.model} TRAINING ---------------')
-    if args.cross_validation:
-        model_list, cv_score = cv_train(args, data, logger, setting)
-    else:
-        model, score = train(args, data, logger, setting)
+    trainer.train(args)
+    
 
     ######################## INFERENCE
     print(f'--------------- {args.model} PREDICT ---------------')
     if args.cross_validation and args.oof:
-        predicts = oof_test(args, model_list, data, setting)
-    elif args.cross_validation and not args.oof:
-        predicts = test(args, model_list[0], data, setting, fold='0')
-    elif not args.cross_validation:
-        predicts = test(args, model, data, setting)
+        predicts = trainer.oof_test(args)
     else:
-        pass
+        predicts = trainer.test(args)
 
 
     ######################## SAVE PREDICT
@@ -132,20 +76,15 @@ def main(args):
     
 
     ######################## INFERENCE & SAVE VALID
-    if args.cross_validation and not args.oof:
-        print(f'--------------- INFERENCE & SAVE {args.model} VALID ---------------')
-        result = infer(args, model_list[0], data, setting, fold="0")
-        valid_filename = filename.replace('.csv', '_valid.csv')
-        result.to_csv(valid_filename, index=False)
-        wandb.save(valid_filename)
-    elif args.cross_validation and not args.oof:
-        print(f'--------------- INFERENCE & SAVE {args.model} VALID ---------------')
-        result = infer(args, model, data, setting)
-        valid_filename = filename.replace('.csv', '_valid.csv')
-        result.to_csv(valid_filename, index=False)
-        wandb.save(valid_filename)
+    print(f'--------------- INFERENCE & SAVE {args.model} VALID ---------------')
+    if args.cross_validation and args.oof:
+        result = trainer.oof_infer(args)
     else:
-        pass
+        result = trainer.infer(args)
+        
+    valid_filename = filename.replace('.csv', '_valid.csv')
+    result.to_csv(valid_filename, index=False)
+    wandb.save(valid_filename)
 
     ######################## WANDB & Logger FINISH
     logger.close()
@@ -199,7 +138,7 @@ if __name__ == "__main__":
     ############### FM, FFM, NCF, WDN, DCN, FFDCN Common OPTION
     arg('--embed_dim', type=int, default=16, help='FM, FFM, NCF, WDN, DCN에서 embedding시킬 차원을 조정할 수 있습니다.')
     arg('--dropout', type=float, default=0.2, help='NCF, WDN, DCN에서 Dropout rate를 조정할 수 있습니다.')
-    arg('--mlp_dims', type=list, default=(16, 16), help='NCF, WDN, DCN, FFDCN에서 MLP Network의 차원을 조정할 수 있습니다.')
+    arg('--mlp_dims', type=list, default=(4, 4), help='NCF, WDN, DCN, FFDCN에서 MLP Network의 차원을 조정할 수 있습니다.')
 
 
     ############### DCN, FFDCN
