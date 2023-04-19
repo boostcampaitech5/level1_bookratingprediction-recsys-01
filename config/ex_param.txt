@@ -1,0 +1,40 @@
+################### cat_boost with gridcv #############
+{
+    "learning_rate": [0.01],
+    "depth": [2],
+    "l2_leaf_reg": [3],
+    "iterations": [10],
+    "early_stopping_rounds": [20],
+    "bagging_temperature": [0.5],
+    "border_count": [32] ,
+    "thread_count": [4] ,
+    "loss_function": ["RMSE"],
+    "verbose": [100]
+}
+
+    "learning_rate": [0.01, 0.05, 0.1],
+    "depth": [2, 4, 6, 8],
+    "l2_leaf_reg": [3],
+    "iterations": [1000, 3000],
+    "early_stopping_rounds": [20],
+    "bagging_temperature": [0.5, 1, 1.5],
+    "border_count": [32, 64, 128] ,
+    "thread_count": [4, 8, 16] ,
+    "loss_function": ["RMSE"],
+    "verbose": [100]
+
+################### lgbm with gridcv #############
+
+{
+    'verbosity': [0],
+    'metric': ['rmse'],
+    'max_depth': [3],
+    'learning_rate': [0.01],
+    'n_estimators': [100],
+    'min_child_samples': [20],
+    'subsample': [0.8],
+    'colsample_bytree': [1.0],
+    'reg_alpha': [0.1],
+    'reg_lambda': [0.1],
+    'random_state': [42]
+}
