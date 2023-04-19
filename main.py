@@ -7,7 +7,7 @@ import dotenv
 import config
 from functools import partial
 from src.utils import Logger, Setting, get_timestamp
-from src.train.trainers import Trainer, CVTrainer
+from src.train import Trainer, CVTrainer
 
 def main(args):
     Setting.seed_everything(args.seed)
