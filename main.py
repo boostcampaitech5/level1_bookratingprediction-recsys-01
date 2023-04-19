@@ -6,7 +6,7 @@ import os
 import dotenv
 import config
 from functools import partial
-from src.utils import Logger, Setting, models_load, loss_fn_load, optimizer_load, get_timestamp
+from src.utils import Logger, Setting, get_timestamp
 from src.data import context_data_load, context_data_split, context_data_loader
 from src.data import dl_data_load, dl_data_split, dl_data_loader
 from src.data import image_data_load, image_data_split, image_data_loader
@@ -99,29 +99,23 @@ def main(args):
     wandb.login(key=WANDB_API_KEY)
 
 
-    ######################## Model & loss_fn & optimizer
-    print(f'--------------- INIT {args.model} ---------------')
-    model = models_load(args,data)
-    loss_fn = loss_fn_load(args)
-    optimizer = optimizer_load(args,model)
-
-
     ######################## TRAIN
     print(f'--------------- {args.model} TRAINING ---------------')
     if args.cross_validation:
-        model, cv_score = cv_train(args, model, data, loss_fn, optimizer, logger, setting)
-        print(f"cv_score is {cv_score:4f}")
+        model_list, cv_score = cv_train(args, data, logger, setting)
     else:
-        model, minimum_loss = train(args, model, data, loss_fn, optimizer, logger, setting)
-        print(f"minimum_loss is {minimum_loss:4f}")
-
+        model, score = train(args, data, logger, setting)
 
     ######################## INFERENCE
     print(f'--------------- {args.model} PREDICT ---------------')
-    if args.oof:
-        predicts = oof_test(args, model, data, setting)
-    else:
+    if args.cross_validation and args.oof:
+        predicts = oof_test(args, model_list, data, setting)
+    elif args.cross_validation and not args.oof:
+        predicts = test(args, model_list[0], data, setting, fold='0')
+    elif not args.cross_validation:
         predicts = test(args, model, data, setting)
+    else:
+        pass
 
 
     ######################## SAVE PREDICT
@@ -138,7 +132,13 @@ def main(args):
     
 
     ######################## INFERENCE & SAVE VALID
-    if not args.oof:
+    if args.cross_validation and not args.oof:
+        print(f'--------------- INFERENCE & SAVE {args.model} VALID ---------------')
+        result = infer(args, model_list[0], data, setting, fold="0")
+        valid_filename = filename.replace('.csv', '_valid.csv')
+        result.to_csv(valid_filename, index=False)
+        wandb.save(valid_filename)
+    elif args.cross_validation and not args.oof:
         print(f'--------------- INFERENCE & SAVE {args.model} VALID ---------------')
         result = infer(args, model, data, setting)
         valid_filename = filename.replace('.csv', '_valid.csv')

@@ -1,27 +1,34 @@
 {
     "method": "grid",
     "metric": {
-        "name": "val_loss",
+        "name": "DCN_weighted_oof",
         "goal": "minimize"
     },
     "parameters": {
-        "epochs": {
-            "values": [5, 10, 30, 50]
-        },
+
         "model": {
-            "values": ["FM", "FFM", "NCF", "WDN", "DCN", "CNN_FM"]
+            "values": ["DCN"]
         },
-        "batch_size": {
-            "values": [512, 1024, 2048]
+		"batch_size": {
+            "values": [512]
         },
-        "loss_fn": {
-            "values": ["MSE", "RMSE"]
+        "epochs": {
+            "values": [10]
         },
-        "optimizer": {
-            "values": ["SGD", "ADAM"]
+        "num_layers": {
+            "values": [1]
         },
-        "dropout": {
-            "values": [0.1, 0.2, 0.3, 0.4, 0.5]
+        "mlp_dims": {
+            "values": [[8]]
+        },
+		"sampler": {
+            "values": ["None"]
+        },
+		"cross_validation": {
+            "values": ["True"]
+        },
+        "oof": {
+            "values": ["True"]
         }
     }
 }
