@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from src.ensembles.stacking import Stacking
+from src.ensembles.stacking import Stacking, OofStacking
 from src.utils import Setting
 import argparse
 
@@ -13,31 +13,23 @@ def main(args):
     if len(file_list) < 2:
         raise ValueError("Ensemble할 Model을 적어도 2개 이상 입력해 주세요.")
     
-    stacking = Stacking(filenames = file_list,filepath=args.result_path,seed=args.seed,test_size=args.test_size)
-    
-    ################# Train
-    if args.cross_validation:
-        stacking.cv_train(stacking.X_train, stacking.y_train)
+    ################# Init
+    if args.oof:
+        stacking = OofStacking(filenames = file_list,filepath=args.result_path)
     else:
-        stacking.train(stacking.X_train, stacking.y_train)
-    
-    
-    ################# Valid
-    print('----- total valid -----')
-    stacking.valid(stacking.X_test, stacking.y_test)
-    
+        stacking = Stacking(filenames = file_list,filepath=args.result_path,seed=args.seed,test_size=args.test_size)
+        
+        
+    stacking.train()
+    stacking.valid()
+    result = stacking.infer()
+        
     
     ################# SAVE
-    weights = stacking.get_weights()
-    result = stacking.infer()
-    
     output = stacking.output_frame.copy()
     output['rating'] = result
     
-    weight_info = '-'.join([str(w)[:4] for w in weights])
-    files_title = '-'.join(file_list)
-    
-    csv_path = f'{args.result_path}stacked-sw-{weight_info}-{files_title}.csv'
+    csv_path = f'{args.result_path}{stacking.get_identity()}.csv'
     output.to_csv(csv_path,index=False)
     print(f'========= new output saved : {csv_path} =========')
     
@@ -79,6 +71,6 @@ if __name__ == "__main__":
     arg('-p', '--result_path',type=str, default='./submit/',
         help='optional: 앙상블할 파일이 존재하는 경로를 전달합니다. (default:"./submit/")')
     arg('--sampler', type=str, default=None, choices=[None, 'None', 'weighted'], help='dataloader의 sampler를 변경할 수 있습니다.')
-    arg('-cv', '--cross_validation', type=bool, default=False, help='cross validation을 사용할 수 있습니다.')
+    arg('-o', '--oof', type=bool, default=False, choices=[False, True], help='cross validation + Out of fold를 사용할 수 있습니다.')
     args = parser.parse_args()
     main(args)
