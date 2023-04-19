@@ -133,13 +133,13 @@ def catboost_Data(args):
     if args.process_age == 'stratified': # fill NaN to have same distribution with origin
         print("+++++++++++++++++++ processing Age : stratified +++++++++++++++++")
         train_na_cnt = sum(np.isnan(train_df.age))
-        train_age_sample = (train_df['age'].dropna().apply(age_map_cat))
+        train_age_sample = pd.DataFrame(train_df['age'].dropna().apply(age_map_cat))
         train_impute_list = train_age_sample.apply(lambda x : x.sample(n = train_na_cnt, replace = True, random_state = args.seed)).reset_index(drop = True)
         for i,idx in enumerate(np.where(np.isnan(train_df['age']))[0]):
             train_df.loc[idx,'age'] = train_impute_list.age[i]
 
         test_na_cnt = sum(np.isnan(test_df.age))
-        test_age_sample = (test_df['age'].dropna().apply(age_map_cat))
+        test_age_sample = pd.DataFrame(test_df['age'].dropna().apply(age_map_cat))
         test_impute_list = test_age_sample.apply(lambda x : x.sample(n = test_na_cnt, replace = True, random_state = args.seed)).reset_index(drop = True)
         for i,idx in enumerate(np.where(np.isnan(test_df['age']))[0]):
             test_df.loc[idx,'age'] = test_impute_list.age[i]
