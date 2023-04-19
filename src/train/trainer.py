@@ -48,6 +48,8 @@ def train(args, dataloader, logger, setting, need_log=True, fold=""):
             logger.log(epoch=epoch+1, train_loss=total_loss/batch, valid_loss=valid_loss)
             wandb.log({'epoch': epoch, 'tra_loss': total_loss/batch, 'val_loss': valid_loss})
         else:
+            print(f'Fold: {int(fold)+1} Epoch: {epoch+1}, Train_loss: {total_loss/batch:.3f}, valid_loss: {valid_loss:.3f}')
+            logger.log(epoch=epoch+1, train_loss=total_loss/batch, valid_loss=valid_loss)
             wandb.log({'fepoch': epoch, 'ftra_loss': total_loss/batch, 'fval_loss': valid_loss})
         
         if minimum_loss > valid_loss:
@@ -82,6 +84,7 @@ def cv_train(args, dataloader, logger, setting):
         model_list.append(model)
         cv_score += minimum_loss/5
     print(f"cv_score: {cv_score:4f}")
+    wandb.log({'cv_score': cv_score})
     return model_list, cv_score
 
 def valid(args, model, dataloader, loss_fn):
