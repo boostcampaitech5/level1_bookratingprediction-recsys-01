@@ -91,6 +91,6 @@ if __name__ == "__main__":
         help='optional: weighted 앙상블 전략에서 각 결과값의 가중치를 조정할 수 있습니다.')
     arg('--result_path',type=str, default='./submit/',
         help='optional: 앙상블할 파일이 존재하는 경로를 전달합니다. (default:"./submit/")')
-    arg('--range_scaling', type=bool, default=True)
+    arg('--range_scaling', type=bool, default=False, choices=[False, True])
     args = parser.parse_args()
     main(args)

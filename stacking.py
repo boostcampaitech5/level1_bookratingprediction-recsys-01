@@ -28,7 +28,7 @@ def main(args):
     ################# SAVE
     output = stacking.output_frame.copy()
     output['rating'] = result
-    if args.range_scaling:
+    if args.range_scaling == True:
         output['rating'] = output.apply(lambda x: 10 if x['rating'] > 10 else(1 if x['rating'] < 1 else x['rating']), axis=1)
     else:
         pass
@@ -76,6 +76,6 @@ if __name__ == "__main__":
         help='optional: 앙상블할 파일이 존재하는 경로를 전달합니다. (default:"./submit/")')
     arg('--sampler', type=str, default=None, choices=[None, 'None', 'weighted'], help='dataloader의 sampler를 변경할 수 있습니다.')
     arg('-o', '--oof', type=bool, default=False, choices=[False, True], help='cross validation + Out of fold를 사용할 수 있습니다.')
-    arg('--range_scaling', type=bool, default=True)
+    arg('--range_scaling', type=bool, default=False, choices=[False, True])
     args = parser.parse_args()
     main(args)
