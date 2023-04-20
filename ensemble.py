@@ -26,7 +26,7 @@ def main(args):
         pass
     en.output_frame['rating'] = result
     if args.range_scaling:
-        en.output_frame['rating'] = en.output_frame.apply(lambda x: 10 if x['rating'] >= 10.5 else(1 if x['rating'] < 0.5 else x['rating']), axis=1)
+        en.output_frame['rating'] = en.output_frame.apply(lambda x: 10 if x['rating'] > 10 else(1 if x['rating'] < 1 else x['rating']), axis=1)
     else:
         pass
     output = en.output_frame.copy()
@@ -91,6 +91,6 @@ if __name__ == "__main__":
         help='optional: weighted 앙상블 전략에서 각 결과값의 가중치를 조정할 수 있습니다.')
     arg('--result_path',type=str, default='./submit/',
         help='optional: 앙상블할 파일이 존재하는 경로를 전달합니다. (default:"./submit/")')
-    arg('--range_scaling', type=bool, default=False)
+    arg('--range_scaling', type=bool, default=True)
     args = parser.parse_args()
     main(args)
