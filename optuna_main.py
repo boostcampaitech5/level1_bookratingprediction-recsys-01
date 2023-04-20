@@ -18,8 +18,9 @@ from src.utils import Logger, Setting, models_load, get_timestamp
 from catboost import CatBoostRegressor, Pool
 from lightgbm import LGBMRegressor 
 from src.data import catboost_Data
-
 import warnings
+
+warnings.filterwarnings("ignore")
 
 def rmse(real: list, predict: list) -> float:
     '''
@@ -39,15 +40,15 @@ def rmse(real: list, predict: list) -> float:
 def CB_optuna(trial:Trial):
     if args.model == 'catboost':
         params = {
-            'iterations':trial.suggest_int("iterations", 10, 20),
-            'learning_rate' : trial.suggest_float('learning_rate',1e-8, 0.1),
-            'reg_lambda': trial.suggest_float('reg_lambda',1e-5,100),
-            'subsample': trial.suggest_float('subsample',0,1),
-            'random_strength': trial.suggest_float('random_strength',10,50),
-            'depth': trial.suggest_int('depth',1, 6),
-            'min_data_in_leaf': trial.suggest_int('min_data_in_leaf',1,30),
-            'leaf_estimation_iterations': trial.suggest_int('leaf_estimation_iterations',1,15),
-            'bagging_temperature' :trial.suggest_float('bagging_temperature', 0.01, 100.00)
+            'iterations':trial.suggest_int("iterations", 1500, 3500),
+            'learning_rate' : trial.suggest_float('learning_rate',0.001, 0.1),
+            'reg_lambda': trial.suggest_float('reg_lambda',50,150),
+            'subsample': trial.suggest_float('subsample',0.5,1),
+            'random_strength': trial.suggest_float('random_strength',35,55),
+            'depth': trial.suggest_int('depth',5, 13),
+            #'min_data_in_leaf': trial.suggest_int('min_data_in_leaf',20,50),
+            #'leaf_estimation_iterations': trial.suggest_int('leaf_estimation_iterations',5,25),
+            #'bagging_temperature' :trial.suggest_float('bagging_temperature', 0.01, 100.00)
             }
     
     elif args.model == 'lgbm':
@@ -55,23 +56,23 @@ def CB_optuna(trial:Trial):
             'objective': 'regression',
             'verbosity': -1,
             'metric': 'rmse', 
-            'num_iterations' :trial.suggest_int('num_iterations', 100, 200),
-            'num_leaves' : trial.suggest_int('num_leaves', 3, 9),
-            'max_depth': trial.suggest_int('max_depth',3, 15),
-            'learning_rate' : trial.suggest_float('learning_rate',1e-8, 0.1),
-            'n_estimators': trial.suggest_int('n_estimators', 10, 50),
-            'min_child_samples': trial.suggest_int('min_child_samples', 5, 100),
-            'subsample': trial.suggest_float('subsample', 0.4, 1),
-            #'colsample_bytree' : trial.suggest_float('colsample_bytree', 0.0, 1.0),
+            'num_iterations' : 2500, #trial.suggest_int('num_iterations', 1000, 2000),
+            'num_leaves' : 9 , #trial.suggest_int('num_leaves', 3, 9),
+            'max_depth': trial.suggest_int('max_depth',4, 9),
+            'learning_rate' : trial.suggest_float('learning_rate',0.01, 0.1),
+            'n_estimators': trial.suggest_int('n_estimators', 3, 20),
+            'min_child_samples': trial.suggest_int('min_child_samples', 70, 100),
+            'subsample': trial.suggest_float('subsample', 0.5, 1),
+            'colsample_bytree' : trial.suggest_float('colsample_bytree', 0.0, 1.0)
             #'reg_alpha' : trial.suggest_float('reg_alpha',  0.0, 1.0),
-            #'reg_lambda' : trial.suggest_float('reg_lambda',  0.0, 1.0)
+            #'reg_lambda' : trial.suggest_float('reg_lambda',  0.5, 1.0)
             }
 
     ######################## Load Dataset
     train, test = catboost_Data(args)
 
-    X_train, y_train = train.drop(['rating', 'book_author'], axis=1), train['rating']
-    X_test, y_test = test.drop(['rating'], axis=1), test['rating']
+    X_train, y_train = train.drop(['rating', 'language',  'category'], axis=1), train['rating']
+    X_test, y_test = test.drop(['rating', 'language',  'category'], axis=1), test['rating']
     
     cat_list = [x for x in X_train.columns.tolist()]
 
@@ -92,14 +93,15 @@ def CB_optuna(trial:Trial):
                                   task_type = "GPU",
                                   cat_features = cat_list,
                                   random_seed= args.seed,
-                                  bootstrap_type='Poisson',
+                                  bootstrap_type='MVS',
                                   verbose = 100)
         model.fit(tr_X,tr_y, use_best_model = True, eval_set = (val_X, val_y))
     
     elif args.model == 'lgbm':
         model = LGBMRegressor(**params,
-                              cat_feature = cat_list)
-        model.fit(tr_X, tr_y)
+                              cat_feature = cat_list,
+                              early_stopping_rounds=10)
+        model.fit(tr_X, tr_y, eval_set = (val_X, val_y),eval_metric = 'rmse', verbose = 500)
     
     val_pred = model.predict(val_X)
     val_pred = val_pred.tolist()
@@ -116,7 +118,6 @@ if __name__ == "__main__":
     arg = parser.add_argument
 
     ############### WANDB OPTION
-    arg('--project', type=str, default='book-rating-prediction')
     arg('--entity', type=str, default='recsys01')
 
     ############### BASIC OPTION
@@ -157,6 +158,7 @@ if __name__ == "__main__":
     ####################### Wandb logging
     wandb_kwargs = {"project": "Tree-based models",
                     "entity" : 'recsys01',
+                    "notes" : 'lang, cat 제외 + MVS',
                     'name' : args.name,
                     "reinit": True}
     
@@ -167,10 +169,13 @@ if __name__ == "__main__":
 
     ####################### data load for prediction
     train, test = catboost_Data(args)
+    # user_id, isbn 제외하고 나머지 사용하지 않는 변수 미리 drop
+    train = train.drop(['language',  'category'], axis = 1)
+    test = test.drop(['language',  'category'], axis = 1)
 
 
-    X_train, y_train = train.drop(['book_author'], axis = 1), train['rating']
-    X_test, y_test = test.drop(['rating','book_author'], axis=1), test['rating']
+    X_train, y_train = train, train['rating']
+    X_test, y_test = test.drop(['rating'], axis=1), test['rating']
 
 
     tr_X, val_X, tr_y, val_y = train_test_split(X_train,
@@ -183,7 +188,7 @@ if __name__ == "__main__":
     val_result = val_X[['user_id','isbn','rating']]
     val_X = val_X.drop(['rating'], axis = 1)
     
-    X_train = train.drop(['book_author','rating'], axis = 1)
+    X_train = X_train.drop(['rating'], axis = 1)
     cat_list = X_train.columns.tolist()
 
     f = "best_{}".format
@@ -212,7 +217,7 @@ if __name__ == "__main__":
                                        task_type = "GPU",
                                        cat_features = cat_list,
                                        random_seed= args.seed,
-                                       bootstrap_type='Poisson',
+                                       bootstrap_type='MVS',
                                        verbose = 100)
         # valid prediction
         best_model.fit(tr_X, tr_y)
@@ -238,13 +243,13 @@ if __name__ == "__main__":
 
     elif args.model == 'lgbm':
         tr_X = tr_X.astype('category')
+        val_X = val_X.astype('category')
         best_model = LGBMRegressor(**best_params,
                                    cat_feature = cat_list)
-        best_model.fit(tr_X, tr_y)
+        best_model.fit(tr_X, tr_y, eval_set = (val_X, val_y),eval_metric = 'rmse', verbose = 500, early_stopping_rounds=10)
 
-        val_X = val_X.astype('category')
+        
         val_result['pred'] = best_model.predict(val_X)
-
         X_train = X_train.astype('category')
         X_test = X_test.astype('category')
 
