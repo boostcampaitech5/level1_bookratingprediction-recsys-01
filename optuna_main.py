@@ -4,16 +4,15 @@ import wandb
 import os
 import dotenv
 import config
-import pandas as pd
-import numpy as np
 import optuna
+import pandas as pd
 from optuna import Trial
 from optuna.samplers import TPESampler
 from optuna.integration.wandb import WeightsAndBiasesCallback
 from optuna.visualization import plot_param_importances, plot_optimization_history
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import train_test_split
 from src.utils import Setting, get_timestamp, rmse
-from src.TreeBased import grid_search, Valid, OOF, Test
+from src.TreeBased import Valid, OOF, Test, get_params, get_wandb_args
 from catboost import CatBoostRegressor
 from lightgbm import LGBMRegressor 
 from src.data import TreeBase_data
@@ -21,38 +20,10 @@ import warnings
 warnings.filterwarnings("ignore")
 
 def CB_optuna(trial:Trial):
-    if args.model == 'catboost':
-        params = {
-            'iterations':trial.suggest_int("iterations", 5, 10),
-            'learning_rate' : trial.suggest_float('learning_rate',0.001, 0.1),
-            'reg_lambda': trial.suggest_float('reg_lambda',50,150),
-            'subsample': trial.suggest_float('subsample',0.5,1),
-            'random_strength': trial.suggest_float('random_strength',35,55),
-            'depth': trial.suggest_int('depth',5, 13),
-            #'min_data_in_leaf': trial.suggest_int('min_data_in_leaf',20,50),
-            #'leaf_estimation_iterations': trial.suggest_int('leaf_estimation_iterations',5,25),
-            #'bagging_temperature' :trial.suggest_float('bagging_temperature', 0.01, 100.00)
-            }
-    
-    elif args.model == 'lgbm':
-        params = {
-            'objective': 'regression',
-            'verbosity': -1,
-            'metric': 'rmse', 
-            'num_iterations' : 10, #trial.suggest_int('num_iterations', 1000, 2000),
-            'num_leaves' : 9 , #trial.suggest_int('num_leaves', 3, 9),
-            'max_depth': trial.suggest_int('max_depth',4, 9),
-            'learning_rate' : trial.suggest_float('learning_rate',0.01, 0.1),
-            'n_estimators': trial.suggest_int('n_estimators', 3, 20),
-            'min_child_samples': trial.suggest_int('min_child_samples', 70, 100),
-            'subsample': trial.suggest_float('subsample', 0.5, 1),
-            'colsample_bytree' : trial.suggest_float('colsample_bytree', 0.0, 1.0)
-            #'reg_alpha' : trial.suggest_float('reg_alpha',  0.0, 1.0),
-            #'reg_lambda' : trial.suggest_float('reg_lambda',  0.5, 1.0)
-            }
+    params = get_params(args, trial)
 
     ######################## Load Dataset
-    data = TreeBase_data(args) #data[0], data[1], data[2], data[3], data[-1]
+    data = TreeBase_data(args)
     cat_list = data[-1]
     tr_X, val_X, tr_y, val_y = train_test_split(data[0],
                                                     data[1],
@@ -90,9 +61,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='parser')
     arg = parser.add_argument
 
-    ############### WANDB OPTION
-    arg('--entity', type=str, default='recsys01')
-
     ############### BASIC OPTION
     arg('--data_path', type=str, default='../data/', help='Data path를 설정할 수 있습니다.')
     arg('--data_shuffle', type=bool, default=True, help='데이터 셔플 여부를 조정할 수 있습니다.')
@@ -127,11 +95,7 @@ if __name__ == "__main__":
 
 
     ####################### Wandb logging
-    wandb_kwargs = {"project": "Tree-based models",
-                    "entity" : 'recsys01',
-                    "notes" : 'lang, cat 제외 + MVS',
-                    'name' : args.name,
-                    "reinit": True}
+    wandb_kwargs = get_wandb_args(args)
     
     wandbc = WeightsAndBiasesCallback(metric_name="RMSE", wandb_kwargs=wandb_kwargs)
     
@@ -166,7 +130,6 @@ if __name__ == "__main__":
     ####################### Train& predict using best params
     
     best_params = optuna_cbrm.best_trial.params
-    cv = StratifiedKFold(n_splits=5)
 
     if args.model == "catboost":
         best_model = CatBoostRegressor(**best_params,
