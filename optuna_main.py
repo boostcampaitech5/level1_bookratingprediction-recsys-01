@@ -205,19 +205,18 @@ if __name__ == "__main__":
     submission = pd.read_csv(args.data_path + 'sample_submission.csv')
     submission['rating'] = predicts
     submission.to_csv(filename, index=False)
+    wandb.save(filename)
     
     
     oof_submission = pd.read_csv(args.data_path + 'sample_submission.csv')
     oof_submission['rating'] = oof_pred
     oof_submission.to_csv(filename.replace('.csv', '_oof.csv'), index=False)
+    wandb.save(filename.replace('.csv', '_oof.csv'))
     
 
     val_result = pd.read_csv(args.data_path + 'sample_validation.csv')
     val_result['pred'] = valid_pred
     val_result.to_csv(filename.replace('.csv', '_valid.csv'), index=False)
-    
-
-    ###################### SAVE FILES TO WANDB
-    wandb.save(filename.replace('.csv', '_oof.csv'))
-    wandb.save(filename.replace('.csv', '_oof.csv'))
     wandb.save(filename.replace('.csv', '_valid.csv'))
+    
+    
