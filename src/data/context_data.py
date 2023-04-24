@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader, Dataset
 from src.utils import get_sampler
+from sklearn.model_selection import train_test_split
 
 ### modi from origin for zero mapping
 def age_map(x) -> int:
@@ -55,7 +55,7 @@ def year_map_cat(x) -> int:
         return 2000
     
 
-def catboost_Data(args):
+def TreeBase_data(args):
     
     """
     Parameters
@@ -154,9 +154,19 @@ def catboost_Data(args):
     test_df['language'] = test_df['language'].fillna("na")
     train_df['book_author'] = train_df['book_author'].fillna("na") 
     test_df['book_author'] = test_df['book_author'].fillna("na")
+    
+    args.process_feat.extend(['rating'])
+    
+    X_train_data, y_train_data = train_df.drop(args.process_feat, axis=1), train_df['rating']
+    X_test_data, y_test_data = test_df.drop(args.process_feat, axis=1), test_df['rating']
+    cat_list = [x for x in X_train_data.columns.tolist()]
         
+    if args.model == 'lgbm':
+        X_test_data = X_test_data.astype('category')
+        X_train_data[cat_list] = X_train_data[cat_list].astype('category')
+    
  
-    return train_df, test_df
+    return X_train_data, y_train_data, X_test_data, y_test_data, cat_list
 
 def process_context_data(users, books, ratings1, ratings2, process_cat, process_age, process_loc):
     """
