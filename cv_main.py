@@ -65,11 +65,11 @@ def main(args):
     print(f'--------------- SAVE {args.model} PREDICT ---------------')
     submission = pd.read_csv(args.data_path + 'sample_submission.csv')
     submission_valid = pd.read_csv(args.data_path + 'sample_validation.csv')
-    submission_oof = submission
+    submission_oof = pd.read_csv(args.data_path + 'sample_submission.csv')
     
     if args.model in ('catboost','lgbm'):
         submission['rating'] = predicts
-        submission_valid['rating'] = valid_res
+        submission_valid['pred'] = valid_res
         submission_oof['rating'] = OOF_res
     else:
         pass

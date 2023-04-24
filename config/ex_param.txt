@@ -7,7 +7,6 @@
     "early_stopping_rounds": [20],
     "bagging_temperature": [0.5],
     "border_count": [32] ,
-    "thread_count": [4] ,
     "loss_function": ["RMSE"],
     "verbose": [100]
 }
@@ -19,7 +18,6 @@
     "early_stopping_rounds": [20],
     "bagging_temperature": [0.5, 1, 1.5],
     "border_count": [32, 64, 128] ,
-    "thread_count": [4, 8, 16] ,
     "loss_function": ["RMSE"],
     "verbose": [100]
 
