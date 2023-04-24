@@ -168,6 +168,17 @@ def TreeBase_data(args):
  
     return X_train_data, y_train_data, X_test_data, y_test_data, cat_list
 
+def TreeBase_data_split(data, args):
+    tr_X, val_X, tr_y, val_y = train_test_split(data[0],
+                                                    data[1],
+                                                    test_size = args.test_size,
+                                                    random_state= args.seed,
+                                                    shuffle=True
+                                                        )
+    return tr_X, val_X, tr_y, val_y
+
+
+
 def process_context_data(users, books, ratings1, ratings2, process_cat, process_age, process_loc):
     """
     Parameters

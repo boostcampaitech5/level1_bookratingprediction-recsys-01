@@ -15,7 +15,7 @@ from src.utils import Setting, get_timestamp, rmse
 from src.TreeBased import Valid, OOF, Test, get_params, get_wandb_args
 from catboost import CatBoostRegressor
 from lightgbm import LGBMRegressor 
-from src.data import TreeBase_data
+from src.data import TreeBase_data, TreeBase_data_split
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -25,12 +25,7 @@ def CB_optuna(trial:Trial):
     ######################## Load Dataset
     data = TreeBase_data(args)
     cat_list = data[-1]
-    tr_X, val_X, tr_y, val_y = train_test_split(data[0],
-                                                    data[1],
-                                                    test_size = 0.2,
-                                                    random_state= args.seed,
-                                                    shuffle=True
-                                                        )
+    tr_X, val_X, tr_y, val_y = TreeBase_data_split(data, args)
     
     if args.model == 'catboost':
         model = CatBoostRegressor(**params,
@@ -63,12 +58,11 @@ if __name__ == "__main__":
 
     ############### BASIC OPTION
     arg('--data_path', type=str, default='../data/', help='Data path를 설정할 수 있습니다.')
-    arg('--data_shuffle', type=bool, default=True, help='데이터 셔플 여부를 조정할 수 있습니다.')
     arg('--test_size', type=float, default=0.2, help='Train/Valid split 비율을 조정할 수 있습니다.')
     arg('--seed', type=int, default=42, help='seed 값을 조정할 수 있습니다.')
-    arg('--model', type=str, default='catboost', choices=['catboost','lgbm'],
-                                help='학습 및 예측할 모델을 선택할 수 있습니다.')
-    arg('--device', type=str, default='cuda', choices=['cuda', 'cpu'], help='학습에 사용할 Device를 조정할 수 있습니다.')
+    arg('--model', type=str, default='catboost', choices=['catboost','lgbm'], help='학습 및 예측할 모델을 선택할 수 있습니다.')
+    arg('--device', type=str, default='GPU', choices=['GPU', 'CPU'], help='학습에 사용할 Device를 조정할 수 있습니다.')
+    arg('--data_shuffle', type=bool, default=True, help='데이터 셔플 여부를 조정할 수 있습니다.')
     arg('--name', type=str, default=f'work-{get_timestamp()}')
     arg('--saved_model_path', type=str, default='./saved_models', help='Saved Model path를 설정할 수 있습니다.')
     arg('--use_best_model', type=bool, default=True, help='검증 성능이 가장 좋은 모델 사용여부를 설정할 수 있습니다.')
@@ -104,13 +98,8 @@ if __name__ == "__main__":
 
     ####################### data load for prediction
     data = TreeBase_data(args) 
-
     cat_list = data[-1]
-    tr_X, val_X, tr_y, val_y = train_test_split(data[0],
-                                                data[1],
-                                                test_size = args.test_size,
-                                                random_state= args.seed,
-                                                shuffle=True)
+    tr_X, val_X, tr_y, val_y = TreeBase_data_split(data, args)
 
     f = "best_{}".format
     for param_name, param_value in optuna_cbrm.best_trial.params.items():
