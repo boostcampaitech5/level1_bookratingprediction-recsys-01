@@ -1,18 +1,16 @@
-import time
 import argparse
 import wandb
 import os
 import dotenv
-import config
-import json
 import pandas as pd
-import numpy as np
-from src.utils import Logger, Setting, models_load, get_timestamp
-from src.data import catboost_Data
-from src.TreeBased import grid_search, train_test, prepare_data
+from src.utils import Logger, Setting, get_timestamp
+from src.data import TreeBase_data
+from src.TreeBased import grid_search, Valid, OOF, Test
+import warnings
 
 def main(args):
     Setting.seed_everything(args.seed)
+    warnings.filterwarnings("ignore")
     
     ######################## Load .env
     dotenv.load_dotenv()
@@ -20,6 +18,7 @@ def main(args):
     ######################## WANDB
     run = wandb.init(project=args.project, entity=args.entity, name=args.name)
     run.tags = [args.model]
+    run.notes = ','.join(args.process_feat)
     
     ####################### Setting for 
     setting = Setting(args)
@@ -37,7 +36,7 @@ def main(args):
     ######################## DATA LOAD
     print(f'--------------- {args.model} Load Data ---------------')
     if args.model in ('catboost', 'lgbm'):
-        data = catboost_Data(args) # data = [train_data, test_data]
+        data = TreeBase_data(args)
     else:
         pass
 
@@ -48,35 +47,45 @@ def main(args):
     else:
         pass
     
-    ######################## train and test
-    print(f'--------------- {args.model} PREDICT ---------------')
-    if args.tuning in ('gridcv'):
-        predicts, predicts_oof, valid_res = train_test(data, best_model, args)
-    else:
-        pass
+    ######################## Valid
+    print(f'--------------- {args.model} Valid ---------------')
+    valid_res = Valid(data, best_model, args)
 
-    ######################## SAVE PREDICT and Valid
+    
+    ######################## Test
+    print(f'--------------- {args.model} Test ---------------')
+    predicts = Test(data, best_model)
+ 
+    
+    ######################## OOF
+    print(f'--------------- {args.model} OOF ---------------')
+    OOF_res = OOF(data, best_model, args)
+
+    ######################## SAVE Predict and Valid and OOF
     print(f'--------------- SAVE {args.model} PREDICT ---------------')
     submission = pd.read_csv(args.data_path + 'sample_submission.csv')
+    submission_valid = pd.read_csv(args.data_path + 'sample_validation.csv')
     submission_oof = submission
     
     if args.model in ('catboost','lgbm'):
         submission['rating'] = predicts
+        submission_valid['rating'] = valid_res
+        submission_oof['rating'] = OOF_res
     else:
         pass
 
-    filename = setting.get_submit_filename(args)
-    oof_name = filename.replace('.csv', '_oof.csv')
-    val_name = filename.replace('.csv', '_valid.csv')
+    pred_name = setting.get_submit_filename(args)
+    val_name = pred_name.replace('.csv', '_valid.csv')
+    oof_name = pred_name.replace('.csv', '_oof.csv')
     
-    submission.to_csv(filename, index=False)
+    submission.to_csv(pred_name, index=False)
+    submission_valid.to_csv(val_name, index=False)
     submission_oof.to_csv(oof_name, index=False)
-    valid_res.to_csv(val_name, index=False)
     
-    wandb.save(filename)
-    wandb.save(oof_name)
+    wandb.save(pred_name)
     wandb.save(val_name)
-    
+    wandb.save(oof_name)
+      
     ######################## WANDB & Logger FINISH
     logger.close()
     wandb.finish()
@@ -107,8 +116,7 @@ if __name__ == "__main__":
     arg('--n_fold', type=int, default= 5,  help= '교차검증 방식을 변경할 수 있습니다.')
     arg('--process_cat', type=str, default='basic', choices=['basic', 'high'], help='books 데이터의 카테고리를 선택할 수 있습니다.')
     arg('--process_age', type=str, default='global_mean', choices=['global_mean', 'zero_cat','stratified', 'rand_norm'], help='데이터의 결측치를 처리할 방법을 선택할 수 있습니다.')
-    arg('--process_loc', type=str, nargs='+', default=['city', 'state', 'country'], choices=['none', 'city', 'state', 'country'], help='usesr의 location을 구분할 기준을 선택할 수 있습니다. none을 선택하면 location은 drop됩니다.')
-    
+    arg('--process_feat', type=str, nargs='+', default=[], choices=['user_id', 'age', 'isbn', 'category', 'publisher', 'language', 'book_author','year_of_publication', 'location_city', 'location_state', 'location_country'], help='Tree model에서 drop할 feature를 고를 수 있습니다.')
 
     args = parser.parse_args()
     main(args)
