@@ -1,7 +1,11 @@
 import wandb
 import numpy as np
 from src.utils import rmse
+from lightgbm import LGBMRegressor 
+from catboost import CatBoostRegressor
+from src.data import TreeBase_data_split
 from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearchCV
+
 
 
 def Valid (data, model, args):
@@ -52,3 +56,23 @@ def Test (data, model):
     y_hat = model.predict(X_test_data)
     
     return y_hat.tolist()
+
+
+def model_optuna(args, data, params):
+    tr_X, val_X, tr_y, val_y = TreeBase_data_split(data, args)
+    cat_list = data[-1]
+    if args.model == 'catboost':
+        model = CatBoostRegressor(**params,
+                                  task_type = "GPU",
+                                  cat_features = cat_list,
+                                  random_seed= args.seed,
+                                  bootstrap_type='MVS',
+                                  verbose = 100)
+        model.fit(tr_X,tr_y, use_best_model = True, eval_set = (val_X, val_y))
+    
+    elif args.model == 'lgbm':
+        model = LGBMRegressor(**params,
+                              cat_feature = cat_list)
+        model.fit(tr_X, tr_y, eval_metric = 'rmse', verbose = 500)
+
+    return model

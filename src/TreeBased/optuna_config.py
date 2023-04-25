@@ -34,7 +34,7 @@ def get_params(args, trial:Trial):
 def get_wandb_args(args):
     wandb_kwargs = {"project": "Tree-based models",
                     "entity" : 'recsys01',
-                    "notes" : 'lang, cat 제외 + MVS',
+                    "notes" : ','.join(args.process_feat),
                     'name' : args.name,
                     "reinit": True}
     

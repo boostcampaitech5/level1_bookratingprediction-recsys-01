@@ -10,11 +10,8 @@ from optuna import Trial
 from optuna.samplers import TPESampler
 from optuna.integration.wandb import WeightsAndBiasesCallback
 from optuna.visualization import plot_param_importances, plot_optimization_history
-from sklearn.model_selection import train_test_split
 from src.utils import Setting, get_timestamp, rmse
-from src.TreeBased import Valid, OOF, Test, get_params, get_wandb_args
-from catboost import CatBoostRegressor
-from lightgbm import LGBMRegressor 
+from src.TreeBased import Valid, OOF, Test, get_params, get_wandb_args, model_optuna
 from src.data import TreeBase_data, TreeBase_data_split
 import warnings
 warnings.filterwarnings("ignore")
@@ -24,30 +21,13 @@ def CB_optuna(trial:Trial):
 
     ######################## Load Dataset
     data = TreeBase_data(args)
-    cat_list = data[-1]
     tr_X, val_X, tr_y, val_y = TreeBase_data_split(data, args)
     
-    if args.model == 'catboost':
-        model = CatBoostRegressor(**params,
-                                  task_type = "GPU",
-                                  cat_features = cat_list,
-                                  random_seed= args.seed,
-                                  bootstrap_type='MVS',
-                                  verbose = 100)
-        model.fit(tr_X,tr_y, use_best_model = True, eval_set = (val_X, val_y))
-    
-    elif args.model == 'lgbm':
-        model = LGBMRegressor(**params,
-                              cat_feature = cat_list,
-                              early_stopping_rounds=10)
-        model.fit(tr_X, tr_y, eval_set = (val_X, val_y),eval_metric = 'rmse', verbose = 500)
-    
-    val_pred = model.predict(val_X)
-    val_pred = val_pred.tolist()
+    ######################## Train and Predict
+    model = model_optuna(args, data, params)
+    val_pred = model.predict(val_X).tolist()
     val_RMSE = rmse(val_y, val_pred)
     return(val_RMSE)
-
-    
 
 if __name__ == "__main__":
 
@@ -96,10 +76,6 @@ if __name__ == "__main__":
     optuna_cbrm = optuna.create_study(direction='minimize', sampler = TPESampler())
     optuna_cbrm.optimize(CB_optuna, n_trials = args.n_trials , callbacks =[wandbc])    
 
-    ####################### data load for prediction
-    data = TreeBase_data(args) 
-    cat_list = data[-1]
-    tr_X, val_X, tr_y, val_y = TreeBase_data_split(data, args)
 
     f = "best_{}".format
     for param_name, param_value in optuna_cbrm.best_trial.params.items():
@@ -117,23 +93,10 @@ if __name__ == "__main__":
     
 
     ####################### Train& predict using best params
-    
-    best_params = optuna_cbrm.best_trial.params
 
-    if args.model == "catboost":
-        best_model = CatBoostRegressor(**best_params,
-                                       task_type = "GPU",
-                                       cat_features = cat_list,
-                                       random_seed= args.seed,
-                                       bootstrap_type='MVS',
-                                       verbose = 100)
-        best_model.fit(tr_X, tr_y)
-        
-    elif args.model == 'lgbm':
-        best_model = LGBMRegressor(**best_params,cat_feature = cat_list)
-        best_model.fit(tr_X, tr_y, eval_set = (val_X, val_y),eval_metric = 'rmse', verbose = 500, early_stopping_rounds=10)
-    
-    
+    data = TreeBase_data(args) 
+    best_params = optuna_cbrm.best_trial.params
+    best_model = model_optuna(args, data, best_params)
 
     valid_pred = Valid(data, best_model, args)
     oof_pred = OOF(data, best_model, args)
@@ -170,5 +133,3 @@ if __name__ == "__main__":
     val_result['pred'] = valid_pred
     val_result.to_csv(filename.replace('.csv', '_valid.csv'), index=False)
     wandb.save(filename.replace('.csv', '_valid.csv'))
-    
-    
