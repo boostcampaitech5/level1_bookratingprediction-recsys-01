@@ -9,15 +9,9 @@ from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearc
 
 
 def Valid (data, model, args):
-    ######################## setting data
-    X_train_data, y_train_data, _, _, _ = data
     
-     ######################## valid
-    train_x, valid_x, train_y, valid_y = train_test_split(X_train_data,
-                                                        y_train_data,
-                                                        test_size=args.test_size,
-                                                        random_state=args.seed,
-                                                        shuffle=args.data_shuffle)
+    ######################## valid
+    train_x, valid_x, train_y, valid_y = TreeBase_data_split(data, args)
     
     model.fit(train_x, train_y)
     valid_pred = model.predict(valid_x)
