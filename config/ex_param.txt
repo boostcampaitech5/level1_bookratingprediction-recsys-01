@@ -1,9 +1,9 @@
 ################### cat_boost with gridcv #############
 {
-    "learning_rate": [0.01],
+    "learning_rate": [0.03593094989694215],
     "depth": [2],
     "l2_leaf_reg": [3],
-    "iterations": [10],
+    "iterations": [2611],
     "early_stopping_rounds": [20],
     "bagging_temperature": [0.5],
     "border_count": [32] ,
@@ -21,18 +21,28 @@
     "loss_function": ["RMSE"],
     "verbose": [100]
 
+    "best_iterations": 2611,
+    "best_learning_rate": 0.03593094989694215,
+    "best_reg_lambda": 46.27121909682228,
+    "best_subsample": 0.9151381284508411,
+    "best_random_strength": 31.9788552896902,
+    "best_depth": 9,
+    "best_min_data_in_leaf": 14,
+    "best_leaf_estimation_iterations": 7,
+    "best_bagging_temperature": 20.06663729340282
+
 ################### lgbm with gridcv #############
 
 {
-    'verbosity': [0],
-    'metric': ['rmse'],
-    'max_depth': [3],
-    'learning_rate': [0.01],
-    'n_estimators': [100],
-    'min_child_samples': [20],
-    'subsample': [0.8],
-    'colsample_bytree': [1.0],
-    'reg_alpha': [0.1],
-    'reg_lambda': [0.1],
-    'random_state': [42]
+    "verbosity": [-1],
+    "metric": ["rmse"],
+    "max_depth": [3],
+    "learning_rate": [0.01],
+    "n_estimators": [100],
+    "min_child_samples": [20],
+    "subsample": [0.8],
+    "colsample_bytree": [1.0],
+    "reg_alpha": [0.1],
+    "reg_lambda": [0.1],
+    "random_state": [42]
 }
