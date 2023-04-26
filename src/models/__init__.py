@@ -1,0 +1,3 @@
+from .CNN_FM.CNN_FM_model import CNN_FM
+from .DeepCoNN_CNN.DeepCoNN_CNN_model import DeepCoNN_CNN
+from .FFDCN.FFDCN_model import FieldAwareFactorizationDeepCrossNetworkModel
