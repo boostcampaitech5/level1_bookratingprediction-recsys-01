@@ -1,0 +1,13 @@
+pandas==2.0.0
+numpy==1.20.3
+scikit-learn
+nltk
+transformers
+matplotlib==3.7.1
+seaborn==0.12.2
+wandb==0.14.2
+torch==2.0.0
+python-dotenv
+catboost==1.1.1
+optuna==3.1.1
+lightgbm==3.3.5
