@@ -27,7 +27,7 @@ level1_bookratingprediction-recsys-1 created by GitHub Classroom
 - 베이스라인 모델
     - FFM, DCN, NCF, DeepCoNN
 - Hybird DL 모델
-    - 3 layer CNN context FM:  베이스라인에서 제공된 CNN_FM에서 레이어를 추가하고, 컨텍스트 데이터를 함께 고려할 수 있도록 하여 더 좋은 성능에 더 적은 에폭수로 도달하도록 함
+    - 3 layer CNN context FM: 베이스라인에서 제공된 CNN_FM에서 레이어를 추가하고, 컨텍스트 데이터를 함께 고려할 수 있도록 하여 더 좋은 성능에 더 적은 에폭수로 도달하도록 함
     - FFDCN: FFM과 DCN을 병합한 하이브리드 모델, FFM의 출력과 DCN의 출력을 concat한 후, linear layer의 출력으로 평점을 예측
     - DeepCoNN_CNN: DeepCoNN모델의 FM layer에 이미지 vector를 추가한 모델
 - Tree-based ML 모델
