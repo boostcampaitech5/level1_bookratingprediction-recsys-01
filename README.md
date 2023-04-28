@@ -45,6 +45,6 @@ level1_bookratingprediction-recsys-1 created by GitHub Classroom
 - **이준영**: 실험 환경 구축, stacking 구현, Hybird DL 모델 구현, 하이퍼파라미터 튜닝
 - **주혜인**: 필드 결측치 처리, Optuna구현, early stopping구현, 하이퍼파라미터 튜닝
 
-### **[랩업리포트 (pdf)](**./BoostCamp5%20Project1%20Wrapup%20Report.pdf**)**
+### [랩업리포트 (pdf)](./BoostCamp5%20Project1%20Wrapup%20Report.pdf)
 
 프로젝트 진행에 관한 더 자세한 내용은 랩업리포트 pdf 파일로 확인할 수 있습니다
