@@ -9,7 +9,7 @@ level1_bookratingprediction-recsys-1 created by GitHub Classroom
 
 ### 협업 툴 및 기술 스택
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/dd46a5a1-0ccd-4769-9d57-a5c317539855/Untitled.png)
+![collaborate tool n tech stack](/imgs/toolnstack.png)
 
 ### 프로젝트 결과
 
@@ -36,9 +36,9 @@ level1_bookratingprediction-recsys-1 created by GitHub Classroom
 
 ### 프로젝트 구성원 및 역할
 
-| (사진) | (사진) | (사진) | (사진) | (사진) |
-| --- | --- | --- | --- | --- |
-| https://github.com/kCMI113 | https://github.com/DyeonPark | https://github.com/alstjrdlzz | https://github.com/2jun0 | https://github.com/juhyein |
+| ![kCMI113](/imgs/img_kCMI113.png) | ![DyeonPark](/imgs/img_DyeonPark.png) | ![alstjrdlzz](/imgs/img_alstjrdlzz.png) | ![2jun0](/imgs/img_2jun0.png) | ![juhyein](/imgs/img_juhyein.png) |
+| :---: | :---: | :---: | :---: | :---: |
+| [강찬미](https://github.com/kCMI113) | [박동연](https://github.com/DyeonPark) | [서민석](https://github.com/alstjrdlzz) | [이준영](https://github.com/2jun0) | [주혜인](https://github.com/juhyein) |
 - **강찬미**: 필드 결측치 처리, Tree-based ML 모델 구현, 하이퍼파라미터 튜닝
 - **박동연**: 필드 결측치 처리, CNN_FM 모델 구조 변경, 하이퍼파라미터 튜닝
 - **서민석**: 실험 환경 구축, 교차검증, OOF, 배치 샘플러, Content-based filtering 구현, 하이퍼파라미터 튜닝
