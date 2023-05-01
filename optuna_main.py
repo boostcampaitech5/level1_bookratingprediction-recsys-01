@@ -16,7 +16,7 @@ from src.data import TreeBase_data, TreeBase_data_split
 import warnings
 warnings.filterwarnings("ignore")
 
-def CB_optuna(trial:Trial):
+def optuna_obj(trial:Trial):
     params = get_params(args, trial)
 
     ######################## Load Dataset
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     wandbc = WeightsAndBiasesCallback(metric_name="RMSE", wandb_kwargs=wandb_kwargs)
     
     optuna_cbrm = optuna.create_study(direction='minimize', sampler = TPESampler())
-    optuna_cbrm.optimize(CB_optuna, n_trials = args.n_trials , callbacks =[wandbc])    
+    optuna_cbrm.optimize(optuna_obj, n_trials = args.n_trials , callbacks =[wandbc])    
 
 
     f = "best_{}".format
